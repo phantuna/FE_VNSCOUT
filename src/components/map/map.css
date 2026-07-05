@@ -1,0 +1,115 @@
+.vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) {
+  transform: scale(1) !important;
+}
+
+.vps-zoom-simple .vps-marker-spot .vps-marker-glow {
+  width: 16px !important;
+  height: 16px !important;
+  background: #ea580c !important;
+  filter: blur(1.5px) !important;
+  opacity: 0.8 !important;
+  border-radius: 50% !important;
+}
+
+.vps-zoom-simple .vps-marker-spot .vps-marker-avatar {
+  width: 10px !important;
+  height: 10px !important;
+  border: 1.5px solid #ffffff !important;
+  background-color: #ea580c !important;
+  border-radius: 50% !important;
+}
+
+.vps-zoom-simple .vps-marker-service .vps-marker-glow {
+  width: 16px !important;
+  height: 16px !important;
+  background: #6366f1 !important;
+  filter: blur(1.5px) !important;
+  opacity: 0.8 !important;
+  border-radius: 3px !important;
+}
+
+.vps-zoom-simple .vps-marker-service .vps-marker-avatar {
+  width: 10px !important;
+  height: 10px !important;
+  border: 1.5px solid #ffffff !important;
+  background-color: #6366f1 !important;
+  border-radius: 3px !important;
+}
+
+.vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar img,
+.vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar svg {
+  display: none !important;
+}
+
+.vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-badge {
+  display: none !important;
+}
+
+.vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-label {
+  display: none !important;
+}
+
+.vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) {
+  transform: scale(1.15) !important;
+  z-index: 90 !important;
+}
+
+.vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-glow {
+  width: 48px !important;
+  height: 48px !important;
+  background: rgba(245, 158, 11, 0.4) !important;
+  filter: blur(2px) !important;
+  opacity: 0.6 !important;
+}
+
+.vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar {
+  width: 42px !important;
+  height: 42px !important;
+  border: 3px solid #ffffff !important;
+  background-color: #1f2937 !important;
+}
+
+.vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar img,
+.vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar svg {
+  display: block !important;
+}
+
+.vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-badge {
+  display: flex !important;
+}
+
+.vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-label {
+  display: block !important;
+  top: 48px !important;
+  opacity: 0.95 !important;
+}
+
+.vps-marker-selected {
+  z-index: 99 !important;
+}
+
+@keyframes radarPulse {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 0.95;
+  }
+}

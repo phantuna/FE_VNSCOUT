@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { type Post, type User } from "@/types"
+import { parseUTCDate } from "@/utils/date"
 
 interface TagItem {
   id: string
@@ -140,7 +141,7 @@ export function ExploreTabPhotos({
             <h3 className="text-sm font-semibold text-foreground">Nhiếp ảnh gia đáng theo dõi</h3>
           </div>
           <div className="space-y-3">
-            {filteredUsers.slice(0, 10).map((u) => (
+            {filteredUsers.slice(0, 5).map((u) => (
               <div key={u.id} className="flex items-center gap-3">
                 <Link href={`/profile/${u.id}`} className="relative shrink-0">
                   <Avatar className="h-10 w-10">
@@ -300,7 +301,7 @@ export function ExploreTabPhotos({
                       </Link>
                       {post.createdDate && (
                         <span className="text-[9px] text-muted-foreground/70 shrink-0 ml-2">
-                          {new Date(post.createdDate).toLocaleDateString('vi-VN')}
+                          {parseUTCDate(post.createdDate).toLocaleDateString('vi-VN')}
                         </span>
                       )}
                     </div>

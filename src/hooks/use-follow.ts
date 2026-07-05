@@ -12,13 +12,9 @@ import {
 } from "@/services/follow.service"
 
 interface UseFollowOptions {
-  /** ID của profile đang xem */
   profileUserId: string
-  /** Số followers ban đầu (từ server, dùng làm giá trị khởi tạo) */
   initialFollowersCount?: number
-  /** Số following ban đầu (của profile user) */
   initialFollowingCount?: number
-  /** Trạng thái follow ban đầu */
   initialIsFollowing?: boolean
 }
 
@@ -28,13 +24,10 @@ interface UseFollowReturn {
   followingCount: number
   isLoading: boolean
   toggleFollow: () => Promise<void>
-  canFollow: boolean // false nếu chưa đăng nhập hoặc xem profile chính mình
+  canFollow: boolean
 }
 
-/**
- * Hook quản lý toàn bộ trạng thái follow cho một profile.
- * Tự động fetch trạng thái từ server khi mount, và cập nhật lại sau mỗi lần toggle.
- */
+
 export function useFollow({
   profileUserId,
   initialFollowersCount = 0,
@@ -53,22 +46,18 @@ export function useFollow({
   const isOwnProfile = currentUser?.id === profileUserId
   const canFollow = !!currentUser && !isOwnProfile
 
-  // Fetch trạng thái thực từ server
   useEffect(() => {
     if (!profileUserId) return
 
     const fetchStatus = async () => {
       try {
-        // Luôn lấy counts của profile user từ getFollowCounts
         const counts = await getFollowCounts(profileUserId)
         setFollowersCount(counts.followersCount)
         setFollowingCount(counts.followingCount)
 
-        // Nếu đã đăng nhập và không xem profile chính mình → kiểm tra trạng thái follow
         if (currentUser && !isOwnProfile) {
           const status = await getFollowStatus(currentUser.id, profileUserId)
           setFollowing(status.following)
-          // Cập nhật lại followersCount từ status (giá trị mới nhất từ server)
           setFollowersCount(status.followersCount)
         }
       } catch (error) {
@@ -87,8 +76,6 @@ export function useFollow({
 
     if (isLoading || isOwnProfile) return
     setIsLoading(true)
-
-    // Optimistic update
     const prevFollowing = following
     const prevFollowersCount = followersCount
     setFollowing(!following)
@@ -96,11 +83,9 @@ export function useFollow({
 
     try {
       const result = await apiToggleFollow(currentUser.id, profileUserId)
-      // Dùng giá trị từ server để đảm bảo chính xác
       setFollowing(result.following)
       setFollowersCount(result.followersCount)
     } catch (error: any) {
-      // Rollback nếu lỗi
       setFollowing(prevFollowing)
       setFollowersCount(prevFollowersCount)
       console.error("[useFollow] toggleFollow failed:", error)

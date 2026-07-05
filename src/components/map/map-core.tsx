@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { type Location } from "@/types"
+import "./map.css"
 
 // Chặn lỗi AbortError ảo từ nội bộ Vietmap GL một cách triệt để ở cấp độ global
 if (typeof window !== "undefined") {
@@ -195,12 +196,16 @@ export function VietMapView({
   // 3. Zoom và di chuyển bản đồ đến vị trí được yêu cầu (flyToLocation)
   useEffect(() => {
     if (flyToLocation && mapRef.current && mapLoaded) {
-      mapRef.current.flyTo({
-        center: [flyToLocation.lng, flyToLocation.lat],
-        zoom: 14.5,
-        essential: true,
-        duration: 2000,
-      })
+      const lat = Number(flyToLocation.lat)
+      const lng = Number(flyToLocation.lng)
+      if (!isNaN(lat) && !isNaN(lng)) {
+        mapRef.current.flyTo({
+          center: [lng, lat],
+          zoom: 14.5,
+          essential: true,
+          duration: 2000,
+        })
+      }
     }
   }, [flyToLocation, mapLoaded])
 
@@ -353,6 +358,10 @@ export function VietMapView({
 
     if (!searchResult) return
 
+    const lat = Number(searchResult.lat)
+    const lng = Number(searchResult.lng)
+    if (isNaN(lat) || isNaN(lng)) return
+
     // Tạo HTML Marker tìm kiếm với hiệu ứng sóng đập (pulsing)
     const el = document.createElement("div")
     el.innerHTML = `
@@ -365,14 +374,14 @@ export function VietMapView({
     `
 
     const marker = new MarkerClass({ element: el })
-      .setLngLat([searchResult.lng, searchResult.lat])
+      .setLngLat([lng, lat])
       .addTo(map)
 
     searchMarkerRef.current = marker
 
     // Tự động di chuyển góc nhìn tới địa điểm tìm kiếm
     map.flyTo({
-      center: [searchResult.lng, searchResult.lat],
+      center: [lng, lat],
       zoom: 14,
       duration: 1800,
     })
@@ -395,7 +404,12 @@ export function VietMapView({
 
     // Thu thập tất cả photos có tọa độ
     const photosWithGps = locationPosts.flatMap(post => 
-      (post.photos || []).filter((p: any) => p.gpsLatitude && p.gpsLongitude)
+      (post.photos || []).filter((p: any) => {
+        if (p.gpsLatitude === null || p.gpsLongitude === null) return false
+        const lat = Number(p.gpsLatitude)
+        const lng = Number(p.gpsLongitude)
+        return !isNaN(lat) && !isNaN(lng)
+      })
     )
 
     photosWithGps.forEach(photo => {
@@ -435,7 +449,7 @@ export function VietMapView({
       })
 
       const marker = new MarkerClass({ element: el })
-        .setLngLat([photo.gpsLongitude, photo.gpsLatitude])
+        .setLngLat([Number(photo.gpsLongitude), Number(photo.gpsLatitude)])
         .addTo(map)
         
       photoMarkersRef.current.push(marker)
@@ -470,126 +484,6 @@ export function VietMapView({
           </div>
         </div>
       )}
-
-      {/* Hiệu ứng Zoom-dependent level of details & Keyframes cho Marker */}
-      <style jsx global>{`
-        /* ─── CHẾ ĐỘ ZOOM XA: HIỂN THỊ ĐƠN GIẢN CHỐNG RỐI MẮT (ZOOM < 11) ─── */
-        .vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) {
-          transform: scale(1) !important;
-        }
-        
-        /* ─── CHẾM NHỊU KHI ZOOM XA: MHàU THEO LOẠI ĐỊ ĐIỂM ─── */
-        /* SPOT: chấm cam tròn (giữ như cũ) */
-        .vps-zoom-simple .vps-marker-spot .vps-marker-glow {
-          width: 16px !important;
-          height: 16px !important;
-          background: #ea580c !important;
-          filter: blur(1.5px) !important;
-          opacity: 0.8 !important;
-          border-radius: 50% !important;
-        }
-        .vps-zoom-simple .vps-marker-spot .vps-marker-avatar {
-          width: 10px !important;
-          height: 10px !important;
-          border: 1.5px solid #ffffff !important;
-          background-color: #ea580c !important;
-          border-radius: 50% !important;
-        }
-
-        /* SERVICE: chấm tím vuông */
-        .vps-zoom-simple .vps-marker-service .vps-marker-glow {
-          width: 16px !important;
-          height: 16px !important;
-          background: #6366f1 !important;
-          filter: blur(1.5px) !important;
-          opacity: 0.8 !important;
-          border-radius: 3px !important;
-        }
-        .vps-zoom-simple .vps-marker-service .vps-marker-avatar {
-          width: 10px !important;
-          height: 10px !important;
-          border: 1.5px solid #ffffff !important;
-          background-color: #6366f1 !important;
-          border-radius: 3px !important;
-        }
-
-        /* Ẩn ảnh và chữ bên trong khi ở zoom xa để giải phóng CPU render đồ họa */
-        .vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar img,
-        .vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar svg {
-          display: none !important;
-        }
-        
-        .vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-badge {
-          display: none !important;
-        }
-
-        .vps-zoom-simple .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-label {
-          display: none !important;
-        }
-
-        /* ─── HOVER LÊN CHẤM TRÒN KHI ZOOM XA: BUNG NỞ CHI TIẾT ĐỂ XEM NHANH ─── */
-        .vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) {
-          transform: scale(1.15) !important;
-          z-index: 90 !important;
-        }
-
-        .vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-glow {
-          width: 48px !important;
-          height: 48px !important;
-          background: rgba(245, 158, 11, 0.4) !important;
-          filter: blur(2px) !important;
-          opacity: 0.6 !important;
-        }
-
-        .vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar {
-          width: 42px !important;
-          height: 42px !important;
-          border: 3px solid #ffffff !important;
-          background-color: #1f2937 !important;
-        }
-
-        .vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar img,
-        .vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-avatar svg {
-          display: block !important;
-        }
-
-        .vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-badge {
-          display: flex !important;
-        }
-
-        .vps-zoom-simple .vietmap-custom-spot-marker:hover .vps-marker-wrapper:not(.vps-marker-selected) .vps-marker-label {
-          display: block !important;
-          top: 48px !important;
-          opacity: 0.95 !important;
-        }
-
-        /* ─── MARKER ĐƯỢC CHỌN (SELECTED): GIỮ NGUYÊN HIỆN THỊ TO VÀ RỰC RỠ Ở MỌI ZOOM ─── */
-        .vps-marker-selected {
-          z-index: 99 !important;
-        }
-
-        /* ─── KEYFRAMES ANIMATION ─── */
-        @keyframes radarPulse {
-          0% {
-            transform: scale(0.3);
-            opacity: 0.8;
-          }
-          100% {
-            transform: scale(2.2);
-            opacity: 0;
-          }
-        }
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 0.5;
-          }
-          50% {
-            transform: scale(1.15);
-            opacity: 0.95;
-          }
-        }
-      `}</style>
     </div>
   )
 }

@@ -64,8 +64,8 @@ export default function AdminDashboard() {
         apiFetch("/api/admin/stats"),
         apiFetch("/api/admin/reports?status=PENDING&size=20")
       ])
-      setStats(statsRes.result)
-      setReports(reportsRes.result?.content || [])
+      setStats(statsRes)
+      setReports(reportsRes?.content || [])
     } catch (error) {
       toast({ title: "Lỗi", description: "Không thể tải dữ liệu admin. Đảm bảo bạn có quyền truy cập.", variant: "destructive" })
     } finally {
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
     try {
       setTabLoading(true)
       const res = await apiFetch(`/api/admin/users?page=${usersPage}&size=10`)
-      const data = res.result || {}
+      const data = res || {}
       setAllUsers(data.content || [])
       setUsersTotalPages(data.totalPages || 1)
     } catch (e) {
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
     try {
       setTabLoading(true)
       const res = await apiFetch(`/api/admin/posts?page=${postsPage}&size=10`)
-      const data = res.result || {}
+      const data = res || {}
       setAllPosts(data.content || [])
       setPostsTotalPages(data.totalPages || 1)
     } catch (e) {
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
     try {
       setTabLoading(true)
       const res = await apiFetch(`/api/admin/locations?page=${locationsPage}&size=10`)
-      const data = res.result || {}
+      const data = res || {}
       setAllLocations(data.content || [])
       setLocationsTotalPages(data.totalPages || 1)
     } catch (e) {
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
     try {
       setTabLoading(true)
       const res = await apiFetch(`/api/v1/admin/banned-words?keyword=${encodeURIComponent(query)}&size=50`)
-      const data = res.result || {}
+      const data = res || {}
       setBannedWords(data.content || [])
     } catch (e) {
       toast({ title: "Lỗi", description: "Không thể lấy danh sách từ cấm", variant: "destructive" })
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
       setReportModalLoading(true)
       setSelectedPostId(postId)
       const res = await apiFetch(`/api/admin/posts/${postId}/reports`)
-      setSelectedPostReports(res.result || [])
+      setSelectedPostReports(res || [])
     } catch (e) {
       toast({ title: "Lỗi", description: "Không thể lấy lịch sử tố cáo bài viết này.", variant: "destructive" })
     } finally {

@@ -5,6 +5,7 @@ import { apiFetch } from "@/services/api.service"
 import { useToast } from "@/hooks/use-toast"
 import { showLoginRequiredToast } from "@/lib/toast-utils"
 import { type Post, type User } from "@/types"
+import { parseUTCDate } from "@/utils/date"
 
 export interface TagItem {
   id: string
@@ -15,47 +16,37 @@ export interface TagItem {
 export function useExploreFeed() {
   const [activeTab, setActiveTab] = useState<"photos" | "photographers" | "tags">("photos")
   const [searchQuery, setSearchQuery] = useState("")
-  const [posts, setPosts] = useState<Post[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("explore_posts")
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        return Array.isArray(parsed) ? parsed : (parsed?.content || [])
-      }
+  const [posts, setPosts] = useState<Post[]>([])
+  const [users, setUsers] = useState<User[]>([])
+  const [tags, setTags] = useState<TagItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Hydrate state from sessionStorage on mount to avoid Next.js Hydration Mismatch
+  useEffect(() => {
+    const savedPosts = sessionStorage.getItem("explore_posts")
+    const savedUsers = sessionStorage.getItem("explore_users")
+    const savedTags = sessionStorage.getItem("explore_tags")
+
+    if (savedPosts) {
+      const parsed = JSON.parse(savedPosts)
+      setPosts(Array.isArray(parsed) ? parsed : (parsed?.content || []))
     }
-    return []
-  })
-  const [users, setUsers] = useState<User[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("explore_users")
-      if (saved) return JSON.parse(saved)
+    if (savedUsers) {
+      setUsers(JSON.parse(savedUsers))
     }
-    return []
-  })
-  const [tags, setTags] = useState<TagItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("explore_tags")
-      if (saved) return JSON.parse(saved)
+    if (savedTags) {
+      setTags(JSON.parse(savedTags))
     }
-    return []
-  })
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== "undefined") {
-      return !sessionStorage.getItem("explore_posts")
+    if (savedPosts) {
+      setLoading(false)
     }
-    return true
-  })
-  // Track IDs mình đang follow
+  }, [])
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
   const [followLoading, setFollowLoading] = useState<string | null>(null)
-
-  // Track danh sách post đã được lưu
   const [savedSet, setSavedSet] = useState<Set<string>>(new Set())
 
-  // Track valid location ids to filter hidden/deleted locations
   const [validLocationIds, setValidLocationIds] = useState<Set<string>>(new Set())
 
-  // Pagination states
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -71,22 +62,23 @@ export function useExploreFeed() {
     const { signal } = controller;
 
     async function fetchData() {
-      if (isMounted) setLoading(true)
+      const hasCache = typeof window !== "undefined" && sessionStorage.getItem("explore_posts")
+      if (isMounted && !hasCache) setLoading(true)
       try {
         const [postsRes, usersRes, locationsRes] = await Promise.allSettled([
           apiFetch(user ? `/api/v1/posts/getAll?size=20&page=0&viewerId=${user.id}` : "/api/v1/posts/getAll?size=20&page=0", { signal }),
           apiFetch("/users/getall?size=50", { signal }),
           apiFetch("/api/locations?size=10000", { signal })
         ])
-        
+
         if (!isMounted) return
 
         if (postsRes.status === "fulfilled" && postsRes.value) {
           const postsArray = (postsRes.value as any)?.content || postsRes.value || []
           if (Array.isArray(postsArray)) {
             const sortedPosts = [...postsArray].sort((a: any, b: any) => {
-            const dateA = a.createdDate ? new Date(a.createdDate).getTime() : 0
-            const dateB = b.createdDate ? new Date(b.createdDate).getTime() : 0
+              const dateA = a.createdDate ? parseUTCDate(a.createdDate).getTime() : 0
+              const dateB = b.createdDate ? parseUTCDate(b.createdDate).getTime() : 0
               return dateB - dateA
             })
             setPosts(sortedPosts)
@@ -107,7 +99,6 @@ export function useExploreFeed() {
           }
         }
       } catch {
-        // Thầm lặng bỏ qua lỗi Abort/Fetch
       } finally {
         if (isMounted) setLoading(false)
       }
@@ -125,15 +116,14 @@ export function useExploreFeed() {
       const nextPage = page + 1
       const res = await apiFetch(user ? `/api/v1/posts/getAll?size=20&page=${nextPage}&viewerId=${user.id}` : `/api/v1/posts/getAll?size=20&page=${nextPage}`)
       const newPosts = res?.content || res || []
-      
+
       if (newPosts.length < 20) {
         setHasMore(false)
       }
-      
+
       if (newPosts.length > 0) {
         setPosts(prev => {
           const combined = [...prev, ...newPosts]
-          // Filter duplicates
           const uniquePosts = combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)
           sessionStorage.setItem("explore_posts", JSON.stringify(uniquePosts))
           return uniquePosts
@@ -147,12 +137,10 @@ export function useExploreFeed() {
     }
   }
 
-  // Fetch follow status khi biết user & danh sách users
   useEffect(() => {
     if (!user || users.length === 0) return
     let isMounted = true
 
-    // Thay vì gọi N+1 request gây lỗi 429 Too Many Requests, gọi 1 request lấy danh sách ID
     apiFetch(`/api/v1/follow/following-ids/${user.id}`)
       .then((followingIds: string[]) => {
         if (isMounted && Array.isArray(followingIds)) {
@@ -160,7 +148,6 @@ export function useExploreFeed() {
         }
       })
       .catch(() => {
-        // Bỏ qua lỗi Abort
       })
 
     return () => {
@@ -182,7 +169,6 @@ export function useExploreFeed() {
         else next.delete(targetUserId)
         return next
       })
-      // Cập nhật số followers trong danh sách
       setUsers(prev => prev.map(u =>
         u.id === targetUserId
           ? { ...u, followersCount: res.followersCount }
@@ -195,7 +181,6 @@ export function useExploreFeed() {
     }
   }
 
-  // Khởi tạo danh sách post đã lưu khi danh sách bài đăng thay đổi
   useEffect(() => {
     if (posts.length > 0) {
       const initialSaved = new Set(
@@ -205,7 +190,6 @@ export function useExploreFeed() {
     }
   }, [posts])
 
-  // Lưu và khôi phục vị trí cuộn
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     const handleScroll = () => {
@@ -232,7 +216,6 @@ export function useExploreFeed() {
     }
   }, [posts.length, loading]);
 
-  // Lưu/Bỏ lưu bài viết thông qua API
   const handleToggleSave = async (postId: string) => {
     if (!user) {
       showLoginRequiredToast(router)
@@ -240,8 +223,7 @@ export function useExploreFeed() {
     }
 
     const wasSaved = savedSet.has(postId)
-    
-    // Cập nhật giao diện lập tức (Optimistic Update)
+
     setSavedSet(prev => {
       const next = new Set(prev)
       if (wasSaved) next.delete(postId)
@@ -255,13 +237,12 @@ export function useExploreFeed() {
       })
       toast({
         title: !wasSaved ? "Đã lưu thành công" : "Đã bỏ lưu",
-        description: !wasSaved 
-          ? "Bài viết đã được lưu vào profile cá nhân của bạn." 
+        description: !wasSaved
+          ? "Bài viết đã được lưu vào profile cá nhân của bạn."
           : "Đã xóa bài viết khỏi danh sách lưu của bạn.",
       })
     } catch (error) {
       console.error("Lỗi khi lưu bài viết:", error)
-      // Rollback trạng thái nếu API lỗi
       setSavedSet(prev => {
         const next = new Set(prev)
         if (wasSaved) next.add(postId)

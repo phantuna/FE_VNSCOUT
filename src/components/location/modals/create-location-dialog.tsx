@@ -202,7 +202,7 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
         setSearchResults((data || []).map((item: any) => ({
           display: item.display_name || item.name || item.display,
           name: item.name || item.display_name?.split(",")[0],
-          lat: item.lat ?? 0, lng: item.lon ?? item.lng ?? 0,
+          lat: Number(item.lat) || 0, lng: Number(item.lon ?? item.lng) || 0,
           ref_id: item.ref_id,
           address: item.address || item.display_name
         })))
@@ -223,18 +223,21 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
         const { getPlaceDetail } = await import("@/services/location.service")
         const detail = await getPlaceDetail(r.ref_id)
         if (detail && detail.lat && detail.lng) {
-          finalLat = detail.lat
-          finalLng = detail.lng
+          finalLat = Number(detail.lat)
+          finalLng = Number(detail.lng)
         }
       }
 
-      if (!finalLat || !finalLng) {
+      if (!finalLat || !finalLng || isNaN(finalLat) || isNaN(finalLng)) {
         toast({ title: "Lỗi", description: "Không thể lấy tọa độ của địa điểm này.", variant: "destructive" })
         return
       }
 
       mapRef.current?.flyTo({ center: [finalLng, finalLat], zoom: 14, duration: 900 })
-      placeMarker(finalLng, finalLat)
+      // Use setTimeout to ensure map is ready and flyTo has started
+      setTimeout(() => {
+        placeMarker(finalLng, finalLat)
+      }, 50)
       setForm(f => ({ ...f, name: f.name || r.name || r.display.split(",")[0].trim() }))
     } catch (e) {
       toast({ title: "Lỗi", description: "Không thể định vị địa điểm này.", variant: "destructive" })
@@ -366,7 +369,7 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
                   </div>
                 </div>
                 {/* Danh mục tự đổi theo loại địa điểm */}
-                <div className="space-y-1.5"><Label className="text-sm">Danh mục</Label><Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}><SelectTrigger><SelectValue placeholder="Chọn..." /></SelectTrigger><SelectContent position="popper" side="bottom" sideOffset={4}>{(form.locationType === "SERVICE" ? SERVICE_CATEGORIES : SPOT_CATEGORIES).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-1.5"><Label className="text-sm">Danh mục</Label><Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}><SelectTrigger><SelectValue placeholder="Chọn..." /></SelectTrigger><SelectContent className="max-h-[200px]" position="popper" side="bottom" sideOffset={4}>{(form.locationType === "SERVICE" ? SERVICE_CATEGORIES : SPOT_CATEGORIES).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
                 <div className="space-y-1.5"><Label className="text-sm">Mô tả</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="..." rows={4} className="resize-none" /></div>
                 <div className={`rounded-lg px-3 py-2.5 border ${pinned ? "bg-primary/5 border-primary/20" : "bg-muted"}`}><p className="text-[11px] text-muted-foreground uppercase">Tọa độ</p>{pinned ? <div className="text-xs font-mono">{form.latitude.toFixed(6)}, {form.longitude.toFixed(6)}</div> : <p className="text-xs text-muted-foreground">Chưa chọn</p>}</div>
               </div>

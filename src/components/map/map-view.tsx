@@ -172,7 +172,19 @@ export function MapView() {
             <MapSearchBar
               searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               searchSuggestions={searchSuggestions} loadingSuggestions={loadingSuggestions}
-              onSelectSuggestion={item => { setSearchResultMarker({ lat: Number(item.lat), lng: Number(item.lon), name: item.display_name }); setSearchTerm(""); setSearchSuggestions([]) }}
+              onSelectSuggestion={item => {
+                const lat = Number(item.lat ?? item.latitude)
+                const lng = Number(item.lng ?? item.lon ?? item.longitude)
+                if (!isNaN(lat) && !isNaN(lng)) {
+                  setSearchResultMarker({
+                    lat,
+                    lng,
+                    name: item.display || item.name || "Địa điểm tìm kiếm"
+                  })
+                }
+                setSearchTerm("")
+                setSearchSuggestions([])
+              }}
               selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
               selectedProvince={selectedProvince} setSelectedProvince={setSelectedProvince}
               provincesList={provincesList} categoriesList={categoriesList}

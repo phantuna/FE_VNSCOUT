@@ -52,20 +52,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 export function PostsFeedView() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedProvince, setSelectedProvince] = useState("")
-  const [locations, setLocations] = useState<LocationItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("home_locations")
-      if (saved) return JSON.parse(saved)
-    }
-    return []
-  })
-
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== "undefined") {
-      return !sessionStorage.getItem("home_locations")
-    }
-    return true
-  })
+  const [locations, setLocations] = useState<LocationItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeLayer, setActiveLayer] = useState<"SPOT" | "SERVICE">("SPOT")
   const [visibleLocationsCount, setVisibleLocationsCount] = useState(20)
@@ -80,6 +68,17 @@ export function PostsFeedView() {
 
   // Tải danh sách địa điểm (level 2)
   useEffect(() => {
+    // Phục hồi dữ liệu từ cache sau khi mount để tránh lỗi Hydration Mismatch
+    const saved = sessionStorage.getItem("home_locations")
+    if (saved) {
+      try {
+        setLocations(JSON.parse(saved))
+        setLoading(false)
+      } catch (e) {
+        console.error("Failed to parse cached locations:", e)
+      }
+    }
+
     async function fetchLocations() {
       try {
         setError(null)

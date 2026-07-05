@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
-// Mock conversations removed. Connect to backend API when available.
 const CONVERSATIONS: any[] = []
 
 export function MessagesView() {
@@ -29,7 +28,6 @@ export function MessagesView() {
           {CONVERSATIONS.length > 0 ? (
             CONVERSATIONS.map((convo) => (
               <div key={convo.userId} className="p-4 border-b border-border">
-                {/* Conversation item implementation */}
               </div>
             ))
           ) : (

@@ -16,8 +16,7 @@ import { PhotoUploader } from "./create-post/photo-uploader"
 import { LocationPicker } from "./create-post/location-picker"
 import { PostTags } from "./create-post/post-tags"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-const PHOTO_LOCATION_MISMATCH_CODE = 9005
+const PHOTO_LOCATION_MISMATCH_CODE = 3003
 
 export function CreatePostView() {
   const router = useRouter()
@@ -45,7 +44,9 @@ export function CreatePostView() {
   const [confirmData, setConfirmData] = useState<any>(null)
 
   useEffect(() => {
-    apiFetch("/api/locations?level=2&size=1000").then(data => setAvailableLocations((data?.content || data) || [])).catch(console.error)
+    apiFetch("/api/locations?level=2&size=1000", { cache: "no-store" })
+      .then(data => setAvailableLocations((data?.content || data) || []))
+      .catch(console.error)
   }, [])
 
   const handleFilesSelected = async (files: FileList) => {

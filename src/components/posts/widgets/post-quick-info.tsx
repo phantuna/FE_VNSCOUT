@@ -1,19 +1,18 @@
 "use client"
 
+import { useMemo } from "react"
 import { MapPin, Info, Clock, Camera, Phone, Globe, ExternalLink, Share2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { type Post } from "@/types"
 import { showSuccessToast, showErrorToast } from "@/lib/toast-utils"
+import { calculateSolarTimes } from "@/lib/solar-calculator"
 
 interface PostInfoHeaderProps {
   post: Post
 }
 
-/**
- * Sidebar bên phải: thông tin nhanh về địa điểm + liên hệ.
- */
 export function PostInfoHeader({ post }: PostInfoHeaderProps) {
   const handleShare = async () => {
     try {
@@ -25,9 +24,15 @@ export function PostInfoHeader({ post }: PostInfoHeaderProps) {
     }
   }
 
+  const solarTimes = useMemo(() => {
+    if (!post.location?.latitude || !post.location?.longitude) return null
+    return calculateSolarTimes(Number(post.location.latitude), Number(post.location.longitude))
+  }, [post.location?.latitude, post.location?.longitude])
+
+  const currentHour = useMemo(() => new Date().getHours(), [])
+
   return (
     <>
-      {/* Quick Info Card */}
       <section className="rounded-[2.5rem] border border-slate-100 bg-white p-6 sm:p-8 shadow-xl shadow-slate-200/50">
         <h3 className="text-lg font-black text-slate-900 mb-6">Thông tin nhanh</h3>
         <div className="space-y-5 text-sm">
@@ -45,12 +50,16 @@ export function PostInfoHeader({ post }: PostInfoHeaderProps) {
               <span className="text-right font-bold text-slate-700">{post.location.category}</span>
             </div>
           )}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-2 text-slate-400">
-              <Clock className="h-4 w-4" /><span>Giờ vàng</span>
+          {(!post.location?.locationType || post.location?.locationType === "SPOT") && (
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-2 text-slate-400">
+                <Clock className="h-4 w-4" /><span>Giờ vàng {currentHour < 12 ? "Sáng" : "Chiều"}</span>
+              </div>
+              <span className="text-right font-bold text-slate-700">
+                {solarTimes ? (currentHour < 12 ? `${solarTimes.sunrise} SA` : `${solarTimes.sunset} CH`) : "Đang cập nhật"}
+              </span>
             </div>
-            <span className="text-right font-bold text-slate-700">{post.location?.goldenHour || "Đang cập nhật"}</span>
-          </div>
+          )}
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-2 text-slate-400">
               <Camera className="h-4 w-4" /><span>Tương tác</span>

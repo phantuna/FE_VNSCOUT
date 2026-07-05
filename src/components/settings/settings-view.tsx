@@ -1,12 +1,12 @@
 "use client"
 
-import { Bell, Lock, User, Palette } from "lucide-react"
+import { Lock, User, Palette } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 
 import { SettingsProfile } from "./tabs/settings-profile"
-import { SettingsNotify } from "./tabs/settings-notify"
 import { SettingsSecurity } from "./tabs/settings-security"
+import { SettingsAppearance } from "./tabs/settings-appearance"
 
 export function SettingsView() {
   return (
@@ -27,13 +27,7 @@ export function SettingsView() {
             <User className="h-4 w-4" />
             Hồ sơ
           </TabsTrigger>
-          <TabsTrigger
-            value="notifications"
-            className="w-full justify-start gap-2 px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:shadow-none"
-          >
-            <Bell className="h-4 w-4" />
-            Thông báo
-          </TabsTrigger>
+
           <TabsTrigger
             value="appearance"
             className="w-full justify-start gap-2 px-4 py-2.5 data-[state=active]:bg-muted data-[state=active]:shadow-none"
@@ -55,18 +49,9 @@ export function SettingsView() {
             <SettingsProfile />
           </TabsContent>
 
-          <TabsContent value="notifications" className="m-0 border-none p-0 outline-none">
-            <SettingsNotify />
-          </TabsContent>
 
-          <TabsContent value="appearance" className="m-0 space-y-6">
-            <div>
-              <h3 className="text-lg font-medium">Giao diện</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Tính năng đang được phát triển...
-              </p>
-              <Separator className="mb-6" />
-            </div>
+          <TabsContent value="appearance" className="m-0 border-none p-0 outline-none">
+            <SettingsAppearance />
           </TabsContent>
 
           <TabsContent value="security" className="m-0 border-none p-0 outline-none">

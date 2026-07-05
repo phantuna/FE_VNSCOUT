@@ -1,21 +1,22 @@
 /**
  * Parse a date string from the backend safely.
  *
- * The Java backend (Spring Boot) returns LocalDateTime serialized WITHOUT timezone info,
- * e.g. "2026-05-22T15:06:00" — which is actually UTC.
- * JavaScript's new Date() treats strings without timezone as LOCAL time (UTC+7 in Vietnam),
- * causing a 7-hour offset bug.
+ * Backend (Spring Boot) is configured with Asia/Ho_Chi_Minh timezone,
+ * so all datetime strings are already in Vietnam time (UTC+7).
+ * e.g. "2026-07-02 16:48:27" means 16:48 Vietnam time.
  *
- * This function appends "Z" to ensure the string is parsed as UTC.
+ * JavaScript's new Date("2026-07-02T16:48:27") without Z treats
+ * it as LOCAL time — which is correct for users in Vietnam.
  */
 export function parseUTCDate(dateStr: string | null | undefined): Date {
   if (!dateStr) return new Date()
-  // Already has timezone info — don't touch
-  if (dateStr.endsWith("Z") || dateStr.includes("+") || /[+-]\d{2}:\d{2}$/.test(dateStr)) {
-    return new Date(dateStr)
+  const cleanStr = dateStr.replace(" ", "T")
+  // Already has explicit timezone — use as-is
+  if (cleanStr.endsWith("Z") || cleanStr.includes("+") || /[+-]\d{2}:\d{2}$/.test(cleanStr)) {
+    return new Date(cleanStr)
   }
-  // Treat as UTC by appending Z
-  return new Date(dateStr + "Z")
+  // Backend returns Vietnam time — parse as local time (no Z suffix)
+  return new Date(cleanStr)
 }
 
 /**

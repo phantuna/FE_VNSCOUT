@@ -83,7 +83,7 @@ export function RightSidebar() {
               .sort((a, b) => b[1] - a[1])
               .slice(0, 10)
               .map(([name, count]) => ({ id: name, name, count }))
-            
+
             if (trendingTags.length > 0) setTags(trendingTags)
             else setTags(fallbackTags)
 
@@ -110,7 +110,6 @@ export function RightSidebar() {
           }
         }
       } catch (_) {
-        // Silent fail — sidebar is decorative, not critical
       } finally {
         setLoading(false)
       }
@@ -122,7 +121,6 @@ export function RightSidebar() {
     <aside className="hidden w-[300px] shrink-0 xl:block col-span-4">
       <div className="sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto pb-8 space-y-8 hide-scrollbar">
 
-        {/* Current User Card */}
         {currentUser && (
           <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
             <Avatar className="h-12 w-12 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
@@ -146,7 +144,6 @@ export function RightSidebar() {
           </div>
         )}
 
-        {/* Suggested Photographers */}
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -193,7 +190,6 @@ export function RightSidebar() {
           )}
         </div>
 
-        {/* Trending Tags — từ database thực */}
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             <TrendingUp className="h-3.5 w-3.5 text-primary" />
@@ -219,7 +215,6 @@ export function RightSidebar() {
           )}
         </div>
 
-        {/* Top 5 Locations */}
         <div>
           <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             <MapPin className="h-3.5 w-3.5 text-primary" />
@@ -269,7 +264,6 @@ export function RightSidebar() {
           )}
         </div>
 
-        {/* Footer */}
         <div className="text-[10px] leading-relaxed text-muted-foreground border-t border-border pt-6">
           <p className="font-bold text-primary/60">Vietnam Photo Scout · VPS</p>
           <p className="mt-1">Khám phá và chia sẻ những khoảnh khắc đẹp khắp Việt Nam.</p>

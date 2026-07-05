@@ -123,14 +123,28 @@ export function useMapView() {
   }, [locationsWithRealStats, searchParams])
 
   useEffect(() => {
-    if (!searchTerm.trim()) { setSearchSuggestions([]); return }
+    if (!searchTerm.trim()) {
+      setSearchSuggestions([])
+      return
+    }
+    let active = true
     const t = setTimeout(async () => {
       setLoadingSuggestions(true)
-      try { setSearchSuggestions(await searchVietMap(searchTerm) || []) }
-      catch { /* ignore */ }
-      finally { setLoadingSuggestions(false) }
+      try {
+        const res = await searchVietMap(searchTerm)
+        if (active) {
+          setSearchSuggestions(res || [])
+        }
+      } catch {
+        if (active) setSearchSuggestions([])
+      } finally {
+        if (active) setLoadingSuggestions(false)
+      }
     }, 450)
-    return () => clearTimeout(t)
+    return () => {
+      active = false
+      clearTimeout(t)
+    }
   }, [searchTerm])
 
   const provincesList = useMemo(() => ["Tất cả", ...Array.from(new Set(locationsWithRealStats.map(l => l.province).filter(Boolean) as string[]))], [locationsWithRealStats])
@@ -152,11 +166,18 @@ export function useMapView() {
       const p = loc.province ? removeVietnameseTones(loc.province) : ""
       return matchCat && matchProv && (n.includes(q) || a.includes(q) || p.includes(q))
     })
-    const withDist = filtered.map(loc => userLocation && loc.latitude && loc.longitude
-      ? { ...loc, distance: calculateDistance(userLocation.lat, userLocation.lng, loc.latitude, loc.longitude) }
+
+    // Xác định toạ độ gốc tham chiếu để tính khoảng cách (Ưu tiên điểm tìm kiếm trước, sau đó tới định vị GPS)
+    const refCoords = searchResultMarker || userLocation
+
+    const withDist = filtered.map(loc => refCoords && loc.latitude && loc.longitude
+      ? { ...loc, distance: calculateDistance(refCoords.lat, refCoords.lng, loc.latitude, loc.longitude) }
       : { ...loc, distance: undefined })
-    return userLocation ? withDist.sort((a, b) => (a.distance || 0) - (b.distance || 0)) : withDist.sort((a, b) => (b.postCount || 0) - (a.postCount || 0))
-  }, [locationsWithRealStats, selectedCategory, selectedProvince, searchTerm, userLocation, showSpots, showServices])
+
+    return refCoords 
+      ? withDist.sort((a, b) => (a.distance || 0) - (b.distance || 0)) 
+      : withDist.sort((a, b) => (b.postCount || 0) - (a.postCount || 0))
+  }, [locationsWithRealStats, selectedCategory, selectedProvince, searchTerm, userLocation, searchResultMarker, showSpots, showServices])
 
   const cameraStats = useMemo(() => {
     const counts: Record<string, number> = {}; let total = 0

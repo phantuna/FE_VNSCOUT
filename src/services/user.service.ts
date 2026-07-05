@@ -1,8 +1,6 @@
 import { apiFetch } from "@/services/api.service"
 import type { User } from "@/types"
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-
 export interface LoginRequest {
   email: string
   password: string
@@ -14,7 +12,6 @@ export interface LoginResponse {
   user: User
 }
 
-/** Đăng nhập */
 export async function login(body: LoginRequest): Promise<LoginResponse> {
   return apiFetch("/auth/login", {
     method: "POST",
@@ -22,7 +19,6 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
   })
 }
 
-/** Đăng ký tài khoản mới */
 export async function register(body: {
   username: string
   email: string
@@ -34,25 +30,20 @@ export async function register(body: {
   })
 }
 
-// ─── Users ────────────────────────────────────────────────────────────────────
 
-/** Lấy thông tin user hiện tại (từ token) */
 export async function getMe(): Promise<User> {
   return apiFetch("/users/me")
 }
 
-/** Lấy thông tin user theo ID */
 export async function getUserById(userId: string): Promise<User> {
   return apiFetch(`/users/${userId}`)
 }
 
-/** Lấy tất cả users */
 export async function getAllUsers(): Promise<User[]> {
   const res = await apiFetch("/users/getall?size=1000")
   return res.content || res
 }
 
-/** Cập nhật thông tin user */
 export async function updateUser(
   userId: string,
   body: Partial<User> & { description?: string }

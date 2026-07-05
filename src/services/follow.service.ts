@@ -6,10 +6,7 @@ export interface FollowStatusResponse {
   followingCount: number
 }
 
-/**
- * Toggle follow/unfollow một user
- * POST /api/v1/follow/{followingId}?followerId={followerId}
- */
+
 export async function toggleFollow(
   followerId: string,
   followingId: string
@@ -19,10 +16,7 @@ export async function toggleFollow(
   })
 }
 
-/**
- * Lấy trạng thái follow + số lượng của profile user
- * GET /api/v1/follow/status?followerId=...&followingId=...
- */
+
 export async function getFollowStatus(
   followerId: string,
   followingId: string
@@ -32,10 +26,7 @@ export async function getFollowStatus(
   )
 }
 
-/**
- * Lấy số followers/following của một user cụ thể
- * GET /api/v1/follow/counts/{userId}
- */
+
 export async function getFollowCounts(
   userId: string
 ): Promise<Pick<FollowStatusResponse, "followersCount" | "followingCount">> {

@@ -12,6 +12,21 @@ import { useToast } from "@/hooks/use-toast"
 import { apiFetch } from "@/services/api.service"
 import { useState, useEffect } from "react"
 import { showSuccessToast, showErrorToast } from "@/lib/toast-utils"
+import { parseUTCDate } from "@/utils/date"
+
+function timeAgo(dateStr?: string): string {
+  if (!dateStr) return ""
+  const date = parseUTCDate(dateStr)
+  if (isNaN(date.getTime())) return dateStr
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (diff < 120) return "vừa xong"
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`
+  if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`
+  if (diff < 2592000) return `${Math.floor(diff / 604800)} tuần trước`
+  if (diff < 31536000) return `${Math.floor(diff / 2592000)} tháng trước`
+  return `${Math.floor(diff / 31536000)} năm trước`
+}
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +50,40 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
   const { user } = useAuth()
   const [commentText, setCommentText] = useState("")
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editCommentText, setEditCommentText] = useState("")
   const commentInputRef = useRef<HTMLInputElement>(null)
+
+  const handleEditSubmit = async (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    try {
+      const response = await apiFetch(`/api/v1/comments/${commentId}`, {
+        method: "PUT",
+        body: JSON.stringify({ content: editCommentText })
+      });
+      
+      setComments(prev => {
+        return prev.map(c => {
+          if (c.id === commentId) {
+            return { ...c, content: response.content, updatedDate: response.updatedDate };
+          }
+          if (c.replies) {
+            return {
+              ...c,
+              replies: c.replies.map(r => r.id === commentId ? { ...r, content: response.content, updatedDate: response.updatedDate } : r)
+            }
+          }
+          return c;
+        });
+      });
+      setEditingCommentId(null);
+      showSuccessToast("Thành công", "Đã cập nhật bình luận.");
+    } catch (err: any) {
+      console.error("Lỗi cập nhật bình luận:", err);
+      const errorMsg = err.data?.message || err.message || "Không thể cập nhật bình luận.";
+      showErrorToast("Lỗi", errorMsg);
+    }
+  }
 
   useEffect(() => {
     if (replyingTo && commentInputRef.current) {
@@ -83,11 +131,38 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-900 text-sm">{comment.author.username}</span>
-                  <span className="text-[10px] text-slate-400">{comment.createdDate}</span>
+                  <span className="text-[10px] text-slate-400" title={comment.createdDate}>{timeAgo(comment.createdDate)}</span>
                 </div>
-                <p className="text-sm text-slate-600 leading-relaxed">{comment.content}</p>
+                {editingCommentId === comment.id ? (
+                  <div className="pt-2 pb-2">
+                    <Input
+                      value={editCommentText}
+                      onChange={e => setEditCommentText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") handleEditSubmit(comment.id)
+                        if (e.key === "Escape") setEditingCommentId(null)
+                      }}
+                      autoFocus
+                      className="text-sm bg-white border-slate-200"
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" onClick={() => handleEditSubmit(comment.id)} className="h-7 text-xs bg-primary text-white">Lưu</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingCommentId(null)} className="h-7 text-xs">Hủy</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-600 leading-relaxed">{comment.content}</p>
+                )}
                 <div className="pt-2 flex items-center gap-4">
                   <button onClick={() => setReplyingTo(comment)} className="text-xs font-bold text-primary hover:underline">Trả lời</button>
+                  {user && user.id === comment.author.id && (
+                    <button 
+                      onClick={() => { setEditingCommentId(comment.id); setEditCommentText(comment.content); }} 
+                      className="text-xs font-bold text-slate-500 hover:text-slate-700 hover:underline"
+                    >
+                      Sửa
+                    </button>
+                  )}
                   {user && (user.id === comment.author.id || user.roles?.includes("ADMIN") || user.roles?.includes("ROLE_ADMIN")) && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -102,7 +177,7 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Hủy</AlertDialogCancel>
-                          <AlertDialogAction 
+                          <AlertDialogAction
                             onClick={async () => {
                               try {
                                 await apiFetch(`/api/v1/comments/${comment.id}`, { method: "DELETE" });
@@ -136,11 +211,38 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900 text-sm">{reply.author.username}</span>
-                        <span className="text-[10px] text-slate-400">{reply.createdDate}</span>
+                        <span className="text-[10px] text-slate-400" title={reply.createdDate}>{timeAgo(reply.createdDate)}</span>
                       </div>
-                      <p className="text-sm text-slate-600 leading-relaxed">{reply.content}</p>
+                      {editingCommentId === reply.id ? (
+                        <div className="pt-2 pb-2">
+                          <Input
+                            value={editCommentText}
+                            onChange={e => setEditCommentText(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === "Enter") handleEditSubmit(reply.id)
+                              if (e.key === "Escape") setEditingCommentId(null)
+                            }}
+                            autoFocus
+                            className="text-sm bg-white border-slate-200"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" onClick={() => handleEditSubmit(reply.id)} className="h-7 text-xs bg-primary text-white">Lưu</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingCommentId(null)} className="h-7 text-xs">Hủy</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-600 leading-relaxed">{reply.content}</p>
+                      )}
                       <div className="pt-1 flex items-center gap-4">
                         <button onClick={() => setReplyingTo(comment)} className="text-xs font-bold text-primary hover:underline">Trả lời</button>
+                        {user && user.id === reply.author.id && (
+                          <button 
+                            onClick={() => { setEditingCommentId(reply.id); setEditCommentText(reply.content); }} 
+                            className="text-xs font-bold text-slate-500 hover:text-slate-700 hover:underline"
+                          >
+                            Sửa
+                          </button>
+                        )}
                         {user && (user.id === reply.author.id || user.roles?.includes("ADMIN") || user.roles?.includes("ROLE_ADMIN")) && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -155,13 +257,13 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                <AlertDialogAction 
+                                <AlertDialogAction
                                   onClick={async () => {
                                     try {
                                       await apiFetch(`/api/v1/comments/${reply.id}`, { method: "DELETE" });
-                                      setComments(prev => prev.map(c => 
-                                        c.id === comment.id 
-                                          ? { ...c, replies: c.replies?.filter(r => r.id !== reply.id) } 
+                                      setComments(prev => prev.map(c =>
+                                        c.id === comment.id
+                                          ? { ...c, replies: c.replies?.filter(r => r.id !== reply.id) }
                                           : c
                                       ));
                                       showSuccessToast("Đã xóa", "Bình luận của bạn đã được xóa.");
