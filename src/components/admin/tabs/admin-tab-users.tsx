@@ -1,4 +1,4 @@
-import { Loader2, Search, RotateCcw, Ban, ShieldCheck } from "lucide-react"
+import { Loader2, Search, RotateCcw, Ban, ShieldCheck, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "../widgets/admin-empty-state"
@@ -87,7 +87,13 @@ export function AdminTabUsers({
                   {filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={6}>
-                        <EmptyState icon="👥" title="Chưa có thành viên nào" description="Danh sách sẽ hiển thị khi có tài khoản đăng ký." compact />
+                        <EmptyState 
+                          icon={<Users className="w-8 h-8" />} 
+                          iconWrapperClass="bg-purple-50 text-purple-600 shadow-sm border border-purple-100"
+                          title="Chưa có thành viên nào" 
+                          description="Danh sách sẽ hiển thị khi có tài khoản đăng ký." 
+                          compact 
+                        />
                       </td>
                     </tr>
                   ) : (

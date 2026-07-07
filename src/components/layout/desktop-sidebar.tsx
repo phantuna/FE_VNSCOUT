@@ -15,8 +15,8 @@ import {
   LogOut,
   AlertCircle,
   ShieldAlert,
-  PanelLeftClose,
   PanelLeftOpen,
+  ChevronDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -58,8 +58,10 @@ export function DesktopSidebar({ isCollapsed: controlledIsCollapsed = false, onT
   const isAdmin = user?.roles?.some(r => r.toLowerCase() === "admin" || r.toLowerCase() === "role_admin")
   const dynamicNavItems = [...NAV_ITEMS]
   if (isAdmin) {
-    dynamicNavItems.push({ href: "/admin", icon: ShieldAlert, label: "Quản lý" })
+    dynamicNavItems.push({ href: "/admin", icon: ShieldAlert, label: "Trung tâm Quản trị" })
   }
+
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return;
@@ -183,6 +185,56 @@ export function DesktopSidebar({ isCollapsed: controlledIsCollapsed = false, onT
                 showLoginRequiredToast(router)
                 router.push("/login")
               }
+            }
+
+            if (item.href === "/admin") {
+              return (
+                <li key={item.href} className="flex flex-col">
+                  <button
+                    onClick={(e) => {
+                      if (!user) {
+                        e.preventDefault()
+                        showLoginRequiredToast(router)
+                        router.push("/login")
+                        return
+                      }
+                      setIsAdminMenuOpen(!isAdminMenuOpen)
+                    }}
+                    className={cn(
+                      "group relative flex items-center justify-between rounded-lg py-2.5 text-sm font-medium transition-colors w-full",
+                      isCollapsed ? "justify-center px-0" : "px-3",
+                      pathname.startsWith("/admin")
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    )}
+                    title={isCollapsed ? item.label : undefined}
+                  >
+                    <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-3")}>
+                      <Icon
+                        className={cn(
+                          "h-5 w-5 transition-colors",
+                          pathname.startsWith("/admin") ? "text-primary" : "group-hover:text-primary"
+                        )}
+                        strokeWidth={pathname.startsWith("/admin") ? 2.5 : 1.5}
+                      />
+                      {!isCollapsed && <span>{item.label}</span>}
+                    </div>
+                    {!isCollapsed && <ChevronDown className={cn("h-4 w-4 transition-transform", isAdminMenuOpen && "rotate-180")} />}
+                  </button>
+                  
+                  {!isCollapsed && (
+                    <div className={cn("overflow-hidden transition-all duration-300", isAdminMenuOpen ? "max-h-[300px] opacity-100 mt-1" : "max-h-0 opacity-0")}>
+                      <div className="flex flex-col gap-1 pl-[42px] pr-3 border-l-2 border-primary/20 ml-[22px]">
+                         <Link href="/admin?tab=stats" className="text-xs font-medium py-2 text-muted-foreground hover:text-primary transition-colors">Bảng điều khiển</Link>
+                         <Link href="/admin?tab=posts" className="text-xs font-medium py-2 text-muted-foreground hover:text-primary transition-colors">Kiểm duyệt bài viết</Link>
+                         <Link href="/admin?tab=users" className="text-xs font-medium py-2 text-muted-foreground hover:text-primary transition-colors">Quản lý Tài khoản</Link>
+                         <Link href="/admin?tab=locations" className="text-xs font-medium py-2 text-muted-foreground hover:text-primary transition-colors">Quản lý Địa điểm</Link>
+                         <Link href="/admin?tab=bannedWords" className="text-xs font-medium py-2 text-muted-foreground hover:text-primary transition-colors">Bộ lọc Từ khóa</Link>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              )
             }
 
             return (

@@ -59,15 +59,15 @@ export function UserReputationCenter({ users }: UserReputationCenterProps) {
               <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
                 <Trophy className="h-5 w-5" />
               </div>
-              User Reputation Center
+              Trung tâm Đánh giá Uy tín
             </h2>
             <p className="text-xs font-bold text-slate-400 mt-1 pl-11">
-              Top 10 thành viên theo Trust Score
+              Top 10 thành viên theo Độ tin cậy
             </p>
           </div>
           <div className="text-right">
             <div className="text-2xl font-black text-slate-800">{avgTrust}<span className="text-sm text-slate-400 font-bold">/100</span></div>
-            <p className="text-[10px] font-bold text-slate-400">Avg Trust Score</p>
+            <p className="text-[10px] font-bold text-slate-400">Độ tin cậy trung bình</p>
           </div>
         </div>
       </div>
@@ -142,7 +142,7 @@ export function UserReputationCenter({ users }: UserReputationCenterProps) {
                   <div className="ml-[4.75rem] bg-slate-50 rounded-2xl border border-slate-100 p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <StatCell icon={<Star className="h-3 w-3 text-amber-500" />} label="Điểm uy tín" value={`${user.reputationScore || 0} RP`} />
                     <StatCell icon={<Trophy className="h-3 w-3 text-blue-500" />} label="Cấp độ" value={`Level ${user.level || 1}`} />
-                    <StatCell icon={<TrendingUp className="h-3 w-3 text-emerald-500" />} label="Trust Score" value={`${user.trustScore}/100`} />
+                    <StatCell icon={<TrendingUp className="h-3 w-3 text-emerald-500" />} label="Độ tin cậy" value={`${user.trustScore}/100`} />
                     <StatCell icon={<Shield className="h-3 w-3 text-slate-500" />} label="Trạng thái" value={user.deleted ? "Đã khóa" : "Bình thường"} valueColor={user.deleted ? "text-red-600" : "text-emerald-600"} />
                     <StatCell icon={<span className="text-[10px]">📧</span>} label="Email" value={user.email || "—"} small />
                   </div>

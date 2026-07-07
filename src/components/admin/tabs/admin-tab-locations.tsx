@@ -1,4 +1,4 @@
-import { Loader2, Search, RotateCcw, EyeOff } from "lucide-react"
+import { Loader2, Search, RotateCcw, EyeOff, MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "../widgets/admin-empty-state"
@@ -63,7 +63,13 @@ export function AdminTabLocations({
                 {filteredLocations.length === 0 ? (
                   <tr>
                     <td colSpan={6}>
-                      <EmptyState icon="📍" title="Không tìm thấy địa điểm" description="Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc." compact />
+                      <EmptyState 
+                        icon={<MapPin className="w-8 h-8" />} 
+                        iconWrapperClass="bg-blue-50 text-blue-600 shadow-sm border border-blue-100"
+                        title="Không tìm thấy địa điểm" 
+                        description="Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc." 
+                        compact 
+                      />
                     </td>
                   </tr>
                 ) : (

@@ -42,7 +42,7 @@ export function MobileHeader() {
   const isAdmin = user?.roles?.some(r => r.toLowerCase() === "admin" || r.toLowerCase() === "role_admin")
   const dynamicNavItems = [...NAV_ITEMS]
   if (isAdmin) {
-    dynamicNavItems.push({ href: "/admin", icon: ShieldAlert, label: "Quản lý" })
+    dynamicNavItems.push({ href: "/admin", icon: ShieldAlert, label: "Trung tâm Quản trị" })
   }
 
   useEffect(() => {

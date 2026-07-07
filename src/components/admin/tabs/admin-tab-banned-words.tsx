@@ -110,7 +110,8 @@ export function AdminTabBannedWords({
         </div>
       ) : filteredWords.length === 0 ? (
         <EmptyState
-          icon="🚫"
+          icon={<Ban className="w-10 h-10" />}
+          iconWrapperClass="bg-rose-50 text-rose-600 shadow-sm border border-rose-100"
           title={wordQuery ? "Không tìm thấy từ cấm" : "Tìm kiếm để hiển thị từ cấm"}
           description={wordQuery ? "Thử tìm với từ khóa khác." : "Nhập từ khóa vào ô tìm kiếm để xem các từ cấm đã lưu."}
         />

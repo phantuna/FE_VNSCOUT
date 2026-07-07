@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useAuth } from "@/context/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 import { apiFetch } from "@/services/api.service"
 import { ExifPanel } from "@/components/posts/widgets/exif-panel"
 import { PhotoUploader } from "./create-post/photo-uploader"
@@ -21,7 +22,8 @@ const PHOTO_LOCATION_MISMATCH_CODE = 3003
 export function CreatePostView() {
   const router = useRouter()
   const { user } = useAuth()
-  const displayUser = user || { username: "Guest", avatarUrl: "" }
+  const { toast } = useToast()
+  const displayUser = user || { username: "Guest", avatarUrl: "", level: 1 }
 
   const [images, setImages] = useState<any[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -103,6 +105,21 @@ export function CreatePostView() {
 
     try {
       await apiFetch("/api/v1/posts/created", { method: "POST", body: JSON.stringify(payload) })
+      if ((displayUser as any).level < 3) {
+        toast({
+          title: "Đã gửi bài viết",
+          description: "Bài viết của bạn đã được ghi nhận và đang chờ Quản trị viên xét duyệt!",
+          variant: "default",
+          className: "bg-emerald-500 text-white border-none",
+        })
+      } else {
+        toast({
+          title: "Thành công",
+          description: "Bài viết của bạn đã được đăng thành công!",
+          variant: "default",
+          className: "bg-emerald-500 text-white border-none",
+        })
+      }
       router.push("/")
     } catch (err: any) {
       const errorData = err?.data || err

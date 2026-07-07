@@ -22,8 +22,18 @@ import { AdminTabBannedWords } from "@/components/admin/tabs/admin-tab-banned-wo
 import { AdminReportModal } from "@/components/admin/modals/admin-report-modal"
 import { AdminBanModal } from "@/components/admin/modals/admin-ban-modal"
 
+import { useSearchParams } from "next/navigation"
+
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"stats" | "posts" | "users" | "locations" | "bannedWords">("stats")
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get("tab") as any
+  const [activeTab, setActiveTab] = useState<"stats" | "posts" | "users" | "locations" | "bannedWords">(tabParam || "stats")
+
+  useEffect(() => {
+    if (tabParam && ["stats", "posts", "users", "locations", "bannedWords"].includes(tabParam)) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
   const [stats, setStats] = useState<AdminStatsResponse | null>(null)
   const [reports, setReports] = useState<ReportResponse[]>([])
   const [allUsers, setAllUsers] = useState<any[]>([])
@@ -36,6 +46,7 @@ export default function AdminDashboard() {
 
   const [postsPage, setPostsPage] = useState(0)
   const [postsTotalPages, setPostsTotalPages] = useState(1)
+  const [postsPendingMode, setPostsPendingMode] = useState(true)
 
   const [locationsPage, setLocationsPage] = useState(0)
   const [locationsTotalPages, setLocationsTotalPages] = useState(1)
@@ -85,7 +96,7 @@ export default function AdminDashboard() {
     } else if (activeTab === "locations") {
       fetchLocations()
     }
-  }, [activeTab, usersPage, postsPage, locationsPage])
+  }, [activeTab, usersPage, postsPage, locationsPage, postsPendingMode])
 
   useEffect(() => {
     if (activeTab === "bannedWords") {
@@ -113,7 +124,8 @@ export default function AdminDashboard() {
   const fetchPosts = async () => {
     try {
       setTabLoading(true)
-      const res = await apiFetch(`/api/admin/posts?page=${postsPage}&size=10`)
+      const pendingQuery = postsPendingMode ? "&pending=true" : ""
+      const res = await apiFetch(`/api/admin/posts?page=${postsPage}&size=10${pendingQuery}`)
       const data = res || {}
       setAllPosts(data.content || [])
       setPostsTotalPages(data.totalPages || 1)
@@ -234,6 +246,26 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleApprovePost = async (postId: string) => {
+    try {
+      await apiFetch(`/api/admin/posts/${postId}/approve`, { method: "PUT" })
+      toast({ title: "Thành công", description: "Đã duyệt bài viết." })
+      fetchPosts()
+    } catch (e) {
+      toast({ title: "Lỗi", description: "Duyệt bài viết thất bại", variant: "destructive" })
+    }
+  }
+
+  const handleRejectPost = async (postId: string) => {
+    try {
+      await apiFetch(`/api/admin/posts/${postId}/reject`, { method: "PUT" })
+      toast({ title: "Thành công", description: "Đã từ chối và ẩn bài viết." })
+      fetchPosts()
+    } catch (e) {
+      toast({ title: "Lỗi", description: "Từ chối bài viết thất bại", variant: "destructive" })
+    }
+  }
+
   const toggleLocationDeletion = async (locationId: string, currentDeleted: boolean) => {
     const targetStatus = currentDeleted ? 0 : 1
     try {
@@ -334,36 +366,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex p-1.5 bg-slate-200/50 backdrop-blur-md rounded-2xl w-full border border-slate-200/50 overflow-x-auto">
-            {[
-              { id: "stats", label: "Tổng quan", icon: Server },
-              { id: "posts", label: "Kiểm duyệt", icon: ShieldCheck },
-              { id: "users", label: "Thành viên", icon: Users },
-              { id: "locations", label: "Địa điểm", icon: MapPin },
-              { id: "bannedWords", label: "Từ cấm", icon: Ban },
-            ].map(tab => {
-              const Icon = tab.icon
-              const isActive = activeTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id as any)
-                    setUsersPage(0)
-                    setPostsPage(0)
-                    setLocationsPage(0)
-                  }}
-                  className={`relative flex-1 flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 ${isActive
-                      ? "bg-white text-orange-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                    }`}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="whitespace-nowrap">{tab.label}</span>
-                </button>
-              )
-            })}
-          </div>
+
 
           {activeTab === "stats" && (
             <AdminTabStats
@@ -380,6 +383,8 @@ export default function AdminDashboard() {
               postsPage={postsPage}
               setPostsPage={setPostsPage}
               postsTotalPages={postsTotalPages}
+              postsPendingMode={postsPendingMode}
+              setPostsPendingMode={setPostsPendingMode}
               viewPostReports={viewPostReports}
               togglePostDeletion={togglePostDeletion}
               reports={reports}
@@ -388,6 +393,8 @@ export default function AdminDashboard() {
               handleDismiss={handleDismiss}
               handleResolve={handleResolve}
               handleBanUser={handleBanUser}
+              handleApprovePost={handleApprovePost}
+              handleRejectPost={handleRejectPost}
             />
           )}
 

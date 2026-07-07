@@ -1,18 +1,20 @@
 "use client"
+import React from "react"
 
 interface EmptyStateProps {
-  icon: string
+  icon: React.ReactNode
+  iconWrapperClass?: string
   title: string
   description: string
   action?: { label: string; onClick: () => void }
   compact?: boolean
 }
 
-export function EmptyState({ icon, title, description, action, compact = false }: EmptyStateProps) {
+export function EmptyState({ icon, iconWrapperClass = "bg-slate-100 text-slate-400", title, description, action, compact = false }: EmptyStateProps) {
   return (
     <div className={`flex flex-col items-center justify-center text-center ${compact ? "py-10" : "py-20"} space-y-4`}>
       <div
-        className={`${compact ? "text-5xl" : "text-7xl"} select-none`}
+        className={`flex items-center justify-center ${compact ? "w-16 h-16 rounded-2xl" : "w-24 h-24 rounded-3xl"} ${iconWrapperClass}`}
         style={{ animation: "floatEmoji 3s ease-in-out infinite" }}
       >
         {icon}
