@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
-  ChevronLeft, Bookmark, Heart, Share2, Flag, Loader2,
-  MessageCircle, MoreHorizontal, Pencil, Trash2, MapPin, Lightbulb
+  ChevronLeft, Bookmark, Heart, Loader2,
+  MessageCircle, Share2, MapPin, Lightbulb, Flag
 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { type Post, type Comment } from "@/types"
@@ -17,13 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea"
 import { PostImageGallery } from "./widgets/post-image-gallery"
 import { PostComments } from "./widgets/post-comments"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+import { PostActionMenu } from "./widgets/post-action-menu"
 import { DeletePostDialog } from "./modals/delete-post-dialog"
 import { EditPostDialog } from "./modals/edit-post-dialog"
 import { cn } from "@/lib/utils"
@@ -241,7 +234,7 @@ export function PostDetailView({
     <div className="min-h-screen bg-white">
       {/* ─── Topbar ─── */}
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur-md">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center px-4 py-3">
           <Button
             variant="ghost"
             size="sm"
@@ -251,44 +244,6 @@ export function PostDetailView({
             <ChevronLeft className="h-4 w-4" />
             Bài viết
           </Button>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-              onClick={handleShare}
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 outline-none"
-                >
-                  <MoreHorizontal className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {isOwner ? (
-                  <>
-                    <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
-                      <Pencil className="mr-2 h-4 w-4" /> Sửa bài viết
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} className="cursor-pointer text-destructive focus:text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" /> Xoá bài viết
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem onClick={handleReportClick} className="cursor-pointer text-rose-500 focus:text-rose-500">
-                    <Flag className="mr-2 h-4 w-4" /> Báo cáo vi phạm
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
       </header>
 
@@ -327,30 +282,13 @@ export function PostDetailView({
                 </p>
               )}
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-700 shrink-0 outline-none">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                {isOwner ? (
-                  <>
-                    <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
-                      <Pencil className="mr-2 h-4 w-4" /> Sửa bài viết
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} className="cursor-pointer text-destructive focus:text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" /> Xoá bài viết
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem onClick={handleReportClick} className="cursor-pointer text-rose-500 focus:text-rose-500">
-                    <Flag className="mr-2 h-4 w-4" /> Báo cáo
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <PostActionMenu
+              isOwner={isOwner}
+              onShare={handleShare}
+              onEdit={() => setIsEditDialogOpen(true)}
+              onDelete={() => setIsDeleteDialogOpen(true)}
+              onReport={handleReportClick}
+            />
           </div>
 
           {/* ── Caption + Tags + Tip ── */}

@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { MapPin, Heart, MessageCircle, Bookmark, Share2, Images } from "lucide-react"
+import { MapPin, Heart, MessageCircle, Bookmark, Share2, Lightbulb } from "lucide-react"
 import { type Post } from "@/types"
 import { formatRelativeTime } from "@/utils/date"
 import { useAuth } from "@/context/AuthContext"
@@ -26,6 +26,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
   const [isLiking, setIsLiking] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showTip, setShowTip] = useState(false)
 
   const handleLike = async () => {
     if (!user) return toast({ title: "Cần đăng nhập", variant: "destructive" })
@@ -108,24 +109,46 @@ export function PostCard({ post: initialPost }: PostCardProps) {
       {/* Actions */}
       <div className="p-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={handleLike} className={`hover:scale-110 transition-transform ${post.liked ? "text-red-500" : "text-foreground"}`}>
+          <button onClick={handleLike} className={`flex items-center gap-1.5 hover:scale-110 transition-transform ${post.liked ? "text-red-500" : "text-foreground"}`}>
             <Heart className={`h-6 w-6 ${post.liked ? "fill-current" : ""}`} />
+            {post.likeCount > 0 && <span className="text-sm font-semibold tabular-nums">{post.likeCount}</span>}
           </button>
-          <Link href={`/post/${post.id}#comments`} className="hover:scale-110 transition-transform text-foreground block">
+          <Link href={`/post/${post.id}#comments`} className="flex items-center gap-1.5 hover:scale-110 transition-transform text-foreground">
             <MessageCircle className="h-6 w-6" />
+            {(post.commentCount ?? 0) > 0 && <span className="text-sm font-semibold tabular-nums">{post.commentCount}</span>}
           </Link>
           <button className="hover:scale-110 transition-transform text-foreground hidden sm:block">
             <Share2 className="h-6 w-6" />
           </button>
         </div>
-        <button onClick={handleSave} className="hover:scale-110 transition-transform text-foreground">
-          <Bookmark className={`h-6 w-6 ${post.isSaved ? "fill-current text-primary" : ""}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {post.shootingTip && (
+            <button
+              onClick={() => setShowTip(v => !v)}
+              title="Xem mẹo chụp ảnh"
+              className={`hover:scale-110 transition-all ${
+                showTip ? "text-orange-500" : "text-muted-foreground hover:text-orange-400"
+              }`}
+            >
+              <Lightbulb className={`h-5 w-5 ${showTip ? "fill-orange-100" : ""}`} />
+            </button>
+          )}
+          <button onClick={handleSave} className="hover:scale-110 transition-transform text-foreground">
+            <Bookmark className={`h-6 w-6 ${post.isSaved ? "fill-current text-primary" : ""}`} />
+          </button>
+        </div>
       </div>
+
+      {/* Shooting Tip Banner */}
+      {post.shootingTip && showTip && (
+        <div className="mx-4 mb-2 flex gap-2.5 items-start bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 animate-in slide-in-from-top-2 duration-200">
+          <Lightbulb className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+          <p className="text-xs text-orange-700 leading-relaxed">{post.shootingTip}</p>
+        </div>
+      )}
 
       {/* Content */}
       <div className="px-4 pb-4">
-        <p className="font-bold text-sm mb-1">{post.likeCount} lượt thích</p>
         <div className="text-sm">
           <div className={`whitespace-pre-wrap ${!isExpanded ? "line-clamp-3" : ""}`}>
             <span className="inline">{post.caption}</span>
@@ -154,11 +177,6 @@ export function PostCard({ post: initialPost }: PostCardProps) {
           </p>
         )}
 
-        {(post.commentCount && post.commentCount > 0) ? (
-          <Link href={`/post/${post.id}`} className="text-muted-foreground text-sm mt-1 block hover:underline">
-            Xem tất cả {post.commentCount} bình luận
-          </Link>
-        ) : null}
         <p className="text-[10px] text-muted-foreground mt-2 uppercase font-semibold tracking-wider">
           {formatRelativeTime(post.createdDate)}
         </p>
