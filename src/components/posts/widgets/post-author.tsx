@@ -12,6 +12,8 @@ import { useAuth } from "@/context/AuthContext"
 import { apiFetch } from "@/services/api.service"
 import { showLoginRequiredToast, showErrorToast } from "@/lib/toast-utils"
 
+import Link from "next/link"
+
 interface PostAuthorSectionProps {
   post: Post
 }
@@ -58,21 +60,25 @@ export function PostAuthorSection({ post }: PostAuthorSectionProps) {
 
   return (
     <section className="rounded-[2.5rem] border border-slate-100 bg-white p-6 sm:p-8 shadow-sm">
-      <div className="flex items-center gap-4 mb-8">
-        <Avatar className="h-12 w-12 ring-2 ring-primary/10 ring-offset-2">
-          <AvatarImage src={post.author.avatarUrl || "/default-avatar.svg"} />
-          <AvatarFallback>{post.author.username?.charAt(0)}</AvatarFallback>
-        </Avatar>
+      <div className="flex items-center gap-4">
+        <Link href={`/profile/${post.author.id}`} className="hover:opacity-80 transition-opacity">
+          <Avatar className="h-12 w-12 ring-2 ring-primary/10 ring-offset-2">
+            <AvatarImage src={post.author.avatarUrl || "/default-avatar.svg"} />
+            <AvatarFallback>{post.author.username?.charAt(0)}</AvatarFallback>
+          </Avatar>
+        </Link>
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Chia sẻ bởi</p>
-          <h4 className="font-bold text-slate-900 flex items-center gap-2">
-            {post.author.username}
-            {post.author.levelTitle && (
-              <Badge className="bg-primary/10 text-primary text-[10px] px-1.5 py-0 rounded-sm border-none">
-                {post.author.levelTitle} • Lvl {post.author.level}
-              </Badge>
-            )}
-          </h4>
+          <Link href={`/profile/${post.author.id}`} className="hover:underline">
+            <h4 className="font-bold text-slate-900 flex items-center gap-2">
+              {post.author.username}
+              {post.author.levelTitle && (
+                <Badge className="bg-primary/10 text-primary text-[10px] px-1.5 py-0 rounded-sm border-none">
+                  {post.author.levelTitle} • Lvl {post.author.level}
+                </Badge>
+              )}
+            </h4>
+          </Link>
         </div>
         {user?.id !== post.author?.id && (
           <Button
@@ -100,17 +106,9 @@ export function PostAuthorSection({ post }: PostAuthorSectionProps) {
           </Button>
         )}
       </div>
-      <h3 className="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
-        <Info className="h-5 w-5 text-primary" />Giới thiệu
-      </h3>
-      <p className="text-base leading-8 text-slate-600 whitespace-pre-wrap">{displayCaption}</p>
-      {(post.tags || []).length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-2">
-          {(post.tags || []).map((tag, idx) => (
-            <span key={`${tag}-${idx}`} className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-bold text-slate-500">#{tag}</span>
-          ))}
-        </div>
-      )}
+      {/* {displayCaption && (
+        <p className="text-base leading-relaxed text-slate-800 whitespace-pre-wrap">{displayCaption}</p>
+      )} */}
     </section>
   )
 }

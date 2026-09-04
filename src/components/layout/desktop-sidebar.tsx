@@ -97,6 +97,16 @@ export function DesktopSidebar({ isCollapsed: controlledIsCollapsed = false, onT
       }
     });
 
+    eventSource.addEventListener("chatUpdate", () => {
+      window.dispatchEvent(new Event('sseChatUpdate'));
+      import("@/services/chat.service").then(({ chatService }) => {
+        chatService.getMyConversations().then(convs => {
+          const total = convs.reduce((sum, c) => sum + c.unreadCount, 0)
+          setUnreadChatCount(total)
+        }).catch(() => { })
+      })
+    });
+
     eventSource.onerror = () => {
       console.warn("Mất kết nối SSE (Thời gian thực). Đang tự động kết nối lại...");
     };

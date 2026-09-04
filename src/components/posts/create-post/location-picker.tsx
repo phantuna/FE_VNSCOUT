@@ -16,10 +16,11 @@ interface LocationPickerProps {
   setSelectedLocation: (loc: { id: string; name: string; locationType?: string } | null) => void
   availableLocations: LocationItem[]
   setManualPin?: (pin: {lat: number, lng: number} | null) => void
+  onLocationCreated?: (loc: LocationItem) => void
   defaultCenter?: {lat: number, lng: number}
 }
 
-export function LocationPicker({ selectedLocation, locationSearch, setLocationSearch, setSelectedLocation, availableLocations, setManualPin, defaultCenter }: LocationPickerProps) {
+export function LocationPicker({ selectedLocation, locationSearch, setLocationSearch, setSelectedLocation, availableLocations, setManualPin, onLocationCreated, defaultCenter }: LocationPickerProps) {
   const [showPicker, setShowPicker] = useState(false)
   const [showMapModal, setShowMapModal] = useState(false)
 
@@ -93,6 +94,7 @@ export function LocationPicker({ selectedLocation, locationSearch, setLocationSe
             setLocationSearch(loc.name)
             setManualPin?.({ lat, lng })
           }}
+          onLocationCreated={onLocationCreated}
         />
       )}
     </div>

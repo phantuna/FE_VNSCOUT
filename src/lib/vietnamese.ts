@@ -1,8 +1,4 @@
-/**
- * Tiện ích chuẩn hóa chuỗi tiếng Việt — dùng chung toàn dự án.
- * Đây là nguồn duy nhất (single source of truth) thay thế cho
- * các bản copy-paste trong map-view.tsx và posts-feed-view.tsx.
- */
+
 export function removeVietnameseTones(str: string): string {
   str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a")
   str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e")

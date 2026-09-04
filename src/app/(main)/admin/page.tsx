@@ -1,5 +1,7 @@
 "use client"
 
+import { Suspense } from "react"
+
 import { useEffect, useState } from "react"
 import { apiFetch } from "@/services/api.service"
 import {
@@ -24,7 +26,10 @@ import { AdminBanModal } from "@/components/admin/modals/admin-ban-modal"
 
 import { useSearchParams } from "next/navigation"
 
-export default function AdminDashboard() {
+// Wrapper component để cô lập useSearchParams trong Suspense boundary
+function AdminDashboardInner() {
+
+
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab") as any
   const [activeTab, setActiveTab] = useState<"stats" | "posts" | "users" | "locations" | "bannedWords">(tabParam || "stats")
@@ -459,6 +464,20 @@ export default function AdminDashboard() {
         </div>
       </div>
     </>
+  )
+}
+
+// Page mặc định: bọc toàn bộ dashboard trong Suspense để fix lỗi build
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col justify-center items-center p-24 min-h-screen">
+        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+        <p className="text-sm font-bold text-slate-400 mt-4">Đang tải...</p>
+      </div>
+    }>
+      <AdminDashboardInner />
+    </Suspense>
   )
 }
 

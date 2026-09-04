@@ -16,22 +16,22 @@ interface AccentColor {
 }
 
 const ACCENT_COLORS: AccentColor[] = [
-  // Warm
-  { name: "Đỏ",       value: "0 84% 60%",    hex: "#ef4444" },
-  { name: "Cam đỏ",   value: "14 90% 55%",   hex: "#f05a28" },
-  { name: "Cam",      value: "25 95% 53%",    hex: "#f97316" },
-  { name: "Vàng",     value: "45 93% 47%",    hex: "#eab308" },
-  // Cool
-  { name: "Xanh lá",  value: "142 71% 45%",  hex: "#22c55e" },
-  { name: "Ngọc",     value: "172 66% 40%",  hex: "#14b8a6" },
-  { name: "Xanh lam", value: "221 83% 53%",  hex: "#3b82f6" },
-  { name: "Indigo",   value: "239 84% 67%",  hex: "#6366f1" },
-  // Creative
-  { name: "Tím",      value: "262 83% 58%",  hex: "#8b5cf6" },
-  { name: "Hồng",     value: "336 80% 58%",  hex: "#ec4899" },
-  // Neutral
-  { name: "Xám",      value: "220 9% 46%",   hex: "#6b7280" },
-  { name: "Đen",      value: "222 47% 11%",  hex: "#1e293b" },
+
+  { name: "Đỏ", value: "0 84% 60%", hex: "#ef4444" },
+  { name: "Cam đỏ", value: "14 90% 55%", hex: "#f05a28" },
+  { name: "Cam", value: "25 95% 53%", hex: "#f97316" },
+  { name: "Vàng", value: "45 93% 47%", hex: "#eab308" },
+
+  { name: "Xanh lá", value: "142 71% 45%", hex: "#22c55e" },
+  { name: "Ngọc", value: "172 66% 40%", hex: "#14b8a6" },
+  { name: "Xanh lam", value: "221 83% 53%", hex: "#3b82f6" },
+  { name: "Indigo", value: "239 84% 67%", hex: "#6366f1" },
+
+  { name: "Tím", value: "262 83% 58%", hex: "#8b5cf6" },
+  { name: "Hồng", value: "336 80% 58%", hex: "#ec4899" },
+
+  { name: "Xám", value: "220 9% 46%", hex: "#6b7280" },
+  { name: "Đen", value: "222 47% 11%", hex: "#1e293b" },
 ]
 
 

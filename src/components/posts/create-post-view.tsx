@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { apiFetch } from "@/services/api.service"
+import imageCompression from "browser-image-compression"
 import { ExifPanel } from "@/components/posts/widgets/exif-panel"
 import { PhotoUploader } from "./create-post/photo-uploader"
 import { LocationPicker } from "./create-post/location-picker"
@@ -55,9 +56,31 @@ export function CreatePostView() {
     if (files.length === 0) return
     setIsUploading(true)
     const formData = new FormData()
-    Array.from(files).forEach(f => formData.append("files", f))
 
     try {
+      const compressedFiles = await Promise.all(Array.from(files).map(async (file) => {
+        // Bỏ qua nếu không phải ảnh hoặc file quá nhỏ (< 500KB)
+        if (!file.type.startsWith("image/") || file.size < 500 * 1024) return file;
+        
+        try {
+          const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1600,
+            useWebWorker: true,
+            preserveExif: true, // Cố gắng giữ lại EXIF
+            initialQuality: 0.8
+          };
+          const compressed = await imageCompression(file, options);
+          // Để đảm bảo tên file không bị mất
+          return new File([compressed], file.name, { type: compressed.type, lastModified: Date.now() });
+        } catch (error) {
+          console.error("Compression error:", error);
+          return file;
+        }
+      }));
+
+      compressedFiles.forEach(f => formData.append("files", f))
+
       const results = await apiFetch("/api/photos/upload", { method: "POST", body: formData })
       setImages(prev => [...prev, ...results])
 
@@ -76,7 +99,15 @@ export function CreatePostView() {
               if (d < min) { min = d; closest = loc }
             }
           }
-          if (closest && min < 0.02) { setSelectedLocation({ id: closest.id, name: closest.name, locationType: closest.locationType }); setLocationSearch(closest.name) }
+          // Tăng khoảng cách nhận diện tự động lên 0.05 (~5.5km)
+          if (closest && min < 0.05) { 
+            setSelectedLocation({ id: closest.id, name: closest.name, locationType: closest.locationType }); 
+            setLocationSearch(closest.name);
+            // Tự động chuyển tab nếu địa điểm thuộc loại khác
+            if (closest.locationType === "SERVICE" || closest.locationType === "SPOT") {
+              setPostType(closest.locationType);
+            }
+          }
         }
       }
     } catch (err: any) {
@@ -199,6 +230,15 @@ export function CreatePostView() {
               setSelectedLocation={setSelectedLocation} 
               availableLocations={availableLocations.filter(loc => loc.locationType === postType)} 
               setManualPin={setManualPin}
+              onLocationCreated={(newLoc) => {
+                setAvailableLocations(prev => [newLoc, ...prev])
+                setSelectedLocation({ id: newLoc.id, name: newLoc.name, locationType: newLoc.locationType })
+                setLocationSearch(newLoc.name)
+                // Tự đổi tab sang loại phù hợp với địa điểm vừa tạo
+                if (newLoc.locationType === "SERVICE" || newLoc.locationType === "SPOT") {
+                  setPostType(newLoc.locationType)
+                }
+              }}
               defaultCenter={(() => {
                 const imgWithGps = images.find(img => img?.exifData?.gpsLatitude && img?.exifData?.gpsLongitude);
                 return imgWithGps 

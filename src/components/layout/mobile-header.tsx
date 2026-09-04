@@ -72,12 +72,23 @@ export function MobileHeader() {
       setUnreadChatCount(customEvent.detail)
     }
 
+    const handleSseChatUpdate = () => {
+      import("@/services/chat.service").then(({ chatService }) => {
+        chatService.getMyConversations().then(convs => {
+          const total = convs.reduce((sum, c) => sum + c.unreadCount, 0)
+          setUnreadChatCount(total)
+        }).catch(() => { })
+      })
+    }
+
     window.addEventListener('notificationRead', handleNotificationRead);
-    window.addEventListener('chatUnreadUpdate', handleChatUpdate)
+    window.addEventListener('chatUnreadUpdate', handleChatUpdate);
+    window.addEventListener('sseChatUpdate', handleSseChatUpdate);
 
     return () => {
       window.removeEventListener('notificationRead', handleNotificationRead);
       window.removeEventListener('chatUnreadUpdate', handleChatUpdate);
+      window.removeEventListener('sseChatUpdate', handleSseChatUpdate);
     };
   }, [user]);
 

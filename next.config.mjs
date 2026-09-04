@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  basePath: '/vnscout',
   output: "standalone",
   typescript: {
     ignoreBuildErrors: true,

@@ -26,10 +26,11 @@ interface LocationMapPickerModalProps {
   onOpenChange: (open: boolean) => void
   availableLocations: LocationItem[]
   onSelectLocation: (loc: LocationItem, lat: number, lng: number) => void
+  onLocationCreated?: (loc: LocationItem) => void
   defaultCenter?: {lat: number, lng: number}
 }
 
-export function LocationMapPickerModal({ open, onOpenChange, availableLocations, onSelectLocation, defaultCenter }: LocationMapPickerModalProps) {
+export function LocationMapPickerModal({ open, onOpenChange, availableLocations, onSelectLocation, onLocationCreated, defaultCenter }: LocationMapPickerModalProps) {
   const { toast } = useToast()
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
@@ -352,10 +353,17 @@ export function LocationMapPickerModal({ open, onOpenChange, availableLocations,
           open={showCreateModal}
           onOpenChange={setShowCreateModal}
           initialLocation={pinnedCoords || defaultCenter || undefined}
-          onCreated={() => {
+          onCreated={(newLoc) => {
             setShowCreateModal(false)
-            onOpenChange(false)
-            toast({ title: "Tạo địa điểm thành công", description: "Vui lòng tìm tên địa điểm vừa tạo để chọn." })
+            if (newLoc) {
+              // Tự động chọn địa điểm vừa tạo rồi đóng map modal
+              onSelectLocation(newLoc, newLoc.latitude ?? pinnedCoords?.lat ?? 0, newLoc.longitude ?? pinnedCoords?.lng ?? 0)
+              onLocationCreated?.(newLoc)
+              onOpenChange(false)
+            } else {
+              toast({ title: "Tạo địa điểm thành công", description: "Vui lòng tìm tên địa điểm vừa tạo để chọn." })
+              onOpenChange(false)
+            }
           }}
         />
       )}

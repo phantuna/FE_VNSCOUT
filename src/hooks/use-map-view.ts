@@ -23,7 +23,6 @@ export const MAP_STYLES = [
   { name: "Ảnh Vệ Tinh (Satellite)", label: "Vệ tinh", id: "satellite", url: `https://maps.vietmap.vn/maps/styles/hm/style.json?apikey=${VIETMAP_API_KEY}`, preview: "from-emerald-800 to-indigo-950" },
 ]
 
-// Global in-memory cache to prevent reloading locations/posts and showing loading states on remount
 let cachedLocations: Location[] | null = null
 let cachedPosts: Post[] | null = null
 
@@ -109,7 +108,6 @@ export function useMapView() {
     )
   }, [])
 
-  // Lắng nghe query param "location" trong URL để tự động chọn địa danh đó trên bản đồ
   useEffect(() => {
     if (locationsWithRealStats.length > 0) {
       const locId = searchParams?.get("location")
@@ -123,28 +121,14 @@ export function useMapView() {
   }, [locationsWithRealStats, searchParams])
 
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setSearchSuggestions([])
-      return
-    }
-    let active = true
+    if (!searchTerm.trim()) { setSearchSuggestions([]); return }
     const t = setTimeout(async () => {
       setLoadingSuggestions(true)
-      try {
-        const res = await searchVietMap(searchTerm)
-        if (active) {
-          setSearchSuggestions(res || [])
-        }
-      } catch {
-        if (active) setSearchSuggestions([])
-      } finally {
-        if (active) setLoadingSuggestions(false)
-      }
+      try { setSearchSuggestions(await searchVietMap(searchTerm) || []) }
+      catch { }
+      finally { setLoadingSuggestions(false) }
     }, 450)
-    return () => {
-      active = false
-      clearTimeout(t)
-    }
+    return () => clearTimeout(t)
   }, [searchTerm])
 
   const provincesList = useMemo(() => ["Tất cả", ...Array.from(new Set(locationsWithRealStats.map(l => l.province).filter(Boolean) as string[]))], [locationsWithRealStats])
@@ -152,7 +136,6 @@ export function useMapView() {
 
   const filteredAndSortedLocations = useMemo(() => {
     const filtered = locationsWithRealStats.filter(loc => {
-      // Lọc theo layer SPOT/SERVICE
       const isService = loc.locationType === "SERVICE"
       if (isService && !showServices) return false
       if (!isService && !showSpots) return false
@@ -166,18 +149,11 @@ export function useMapView() {
       const p = loc.province ? removeVietnameseTones(loc.province) : ""
       return matchCat && matchProv && (n.includes(q) || a.includes(q) || p.includes(q))
     })
-
-    // Xác định toạ độ gốc tham chiếu để tính khoảng cách (Ưu tiên điểm tìm kiếm trước, sau đó tới định vị GPS)
-    const refCoords = searchResultMarker || userLocation
-
-    const withDist = filtered.map(loc => refCoords && loc.latitude && loc.longitude
-      ? { ...loc, distance: calculateDistance(refCoords.lat, refCoords.lng, loc.latitude, loc.longitude) }
+    const withDist = filtered.map(loc => userLocation && loc.latitude && loc.longitude
+      ? { ...loc, distance: calculateDistance(userLocation.lat, userLocation.lng, loc.latitude, loc.longitude) }
       : { ...loc, distance: undefined })
-
-    return refCoords 
-      ? withDist.sort((a, b) => (a.distance || 0) - (b.distance || 0)) 
-      : withDist.sort((a, b) => (b.postCount || 0) - (a.postCount || 0))
-  }, [locationsWithRealStats, selectedCategory, selectedProvince, searchTerm, userLocation, searchResultMarker, showSpots, showServices])
+    return userLocation ? withDist.sort((a, b) => (a.distance || 0) - (b.distance || 0)) : withDist.sort((a, b) => (b.postCount || 0) - (a.postCount || 0))
+  }, [locationsWithRealStats, selectedCategory, selectedProvince, searchTerm, userLocation, showSpots, showServices])
 
   const cameraStats = useMemo(() => {
     const counts: Record<string, number> = {}; let total = 0

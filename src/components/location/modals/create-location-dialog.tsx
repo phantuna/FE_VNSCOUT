@@ -28,12 +28,12 @@ const SERVICE_CATEGORIES = [
 ]
 
 interface SearchResult { display: string; name: string; lat: number; lng: number; ref_id?: string; address?: string }
-interface CreateLocationDialogProps { 
-  onCreated?: () => void; 
+interface CreateLocationDialogProps {
+  onCreated?: (location?: any) => void;
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  initialLocation?: {lat: number, lng: number};
+  initialLocation?: { lat: number, lng: number };
 }
 
 export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen, onOpenChange, initialLocation }: CreateLocationDialogProps) {
@@ -46,7 +46,7 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
   const [internalOpen, setInternalOpen] = useState(false)
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : internalOpen
-  
+
   const setOpen = (newOpen: boolean) => {
     if (!isControlled) setInternalOpen(newOpen)
     onOpenChange?.(newOpen)
@@ -68,7 +68,7 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
     }
     return MAP_STYLES[0]
   })
-  
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("vietmap_style", selectedStyle.id)
@@ -113,7 +113,7 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
       center: [108.2022, 16.0471], zoom: 5.5, antialias: false,
     })
     mapRef.current = map
-    ;(window as any).vietmapPersistentInstance = map
+      ; (window as any).vietmapPersistentInstance = map
     map.on("load", () => setMapLoaded(true))
     map.on("click", (e: any) => {
       placeMarker(e.lngLat.lng, e.lngLat.lat)
@@ -121,14 +121,7 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
     })
   }, [placeMarker, reverseGeocodeAndFill])
 
-  useEffect(() => {
-    const checkScript = setInterval(() => {
-      if ((window as any).vietmapgl) { clearInterval(checkScript); initLocationMap() }
-    }, 200)
-    return () => clearInterval(checkScript)
-  }, [initLocationMap])
-
-  // ── Map persistence ──
+  // Removed eager initialization to prevent background map rendering and excessive .pbf requests
   useEffect(() => {
     const globalContainer = document.getElementById("persistent-map-container")
     if (!globalContainer) return
@@ -137,7 +130,6 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
       if (!globalContainer.firstChild) {
         initLocationMap()
       } else if (!mapRef.current && (window as any).vietmapPersistentInstance) {
-        // Restore map ref if it was lost due to unmount
         mapRef.current = (window as any).vietmapPersistentInstance
         setMapLoaded(true)
       }
@@ -202,7 +194,7 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
         setSearchResults((data || []).map((item: any) => ({
           display: item.display_name || item.name || item.display,
           name: item.name || item.display_name?.split(",")[0],
-          lat: Number(item.lat) || 0, lng: Number(item.lon ?? item.lng) || 0,
+          lat: item.lat ?? 0, lng: item.lon ?? item.lng ?? 0,
           ref_id: item.ref_id,
           address: item.address || item.display_name
         })))
@@ -214,7 +206,7 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
   const handleSelectResult = async (r: SearchResult) => {
     setSearchQuery(r.display); setSearchResults([])
     setIsSearching(true)
-    
+
     let finalLat = r.lat
     let finalLng = r.lng
 
@@ -223,21 +215,18 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
         const { getPlaceDetail } = await import("@/services/location.service")
         const detail = await getPlaceDetail(r.ref_id)
         if (detail && detail.lat && detail.lng) {
-          finalLat = Number(detail.lat)
-          finalLng = Number(detail.lng)
+          finalLat = detail.lat
+          finalLng = detail.lng
         }
       }
 
-      if (!finalLat || !finalLng || isNaN(finalLat) || isNaN(finalLng)) {
+      if (!finalLat || !finalLng) {
         toast({ title: "Lỗi", description: "Không thể lấy tọa độ của địa điểm này.", variant: "destructive" })
         return
       }
 
       mapRef.current?.flyTo({ center: [finalLng, finalLat], zoom: 14, duration: 900 })
-      // Use setTimeout to ensure map is ready and flyTo has started
-      setTimeout(() => {
-        placeMarker(finalLng, finalLat)
-      }, 50)
+      placeMarker(finalLng, finalLat)
       setForm(f => ({ ...f, name: f.name || r.name || r.display.split(",")[0].trim() }))
     } catch (e) {
       toast({ title: "Lỗi", description: "Không thể định vị địa điểm này.", variant: "destructive" })
@@ -252,10 +241,10 @@ export function CreateLocationDialog({ onCreated, trigger, open: controlledOpen,
     if (!form.latitude || !form.longitude) return toast({ title: "Chọn vị trí trên bản đồ", variant: "destructive" })
     setIsSubmitting(true)
     try {
-      await createLocation(form)
+      const newLoc = await createLocation(form)
       toast({ title: "✅ Tạo địa điểm thành công!" })
-      setOpen(false); onCreated?.()
-      setForm({ name: "", latitude: 0, longitude: 0, description: "", category: "" })
+      setOpen(false); onCreated?.(newLoc)
+      setForm({ name: "", latitude: 0, longitude: 0, description: "", category: "", locationType: form.locationType })
       setSearchQuery(""); setPinned(false)
       if (markerRef.current) { markerRef.current.remove(); markerRef.current = null }
     } catch (err: any) {

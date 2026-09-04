@@ -38,7 +38,7 @@ export function PostGallery({
         onToggleLike={onToggleLike}
         onToggleSave={onToggleSave}
       />
-      <PostAuthorSection post={post} />
+      {/* <PostAuthorSection post={post} /> */}
       <PostTipsExif post={post} />
     </>
   )

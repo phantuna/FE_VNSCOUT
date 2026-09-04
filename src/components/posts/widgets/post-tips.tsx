@@ -12,33 +12,13 @@ interface PostTipsExifProps {
 
 export function PostTipsExif({ post }: PostTipsExifProps) {
   const [showExif, setShowExif] = useState(false)
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0)
   
-  const displayTip = post.shootingTip || ""
   const isService = post.location?.locationType === "SERVICE"
-  const activePhoto = post.photos?.[0]
+  const activePhoto = post.photos?.[activePhotoIndex]
 
   return (
     <>
-      {/* Photo Tip */}
-      {displayTip && (
-        <section className="rounded-[2.5rem] border border-primary/10 bg-primary/5 p-6 sm:p-8 shadow-inner overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
-            <Lightbulb className="h-20 w-20 text-primary" />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-2xl bg-primary/20 p-3 text-primary shadow-sm">
-                <Lightbulb className="h-5 w-5" />
-              </div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">
-                {isService ? "Đánh giá trải nghiệm" : "Mẹo từ Scouter"}
-              </p>
-            </div>
-            <p className="text-lg font-bold leading-relaxed text-slate-800 italic">"{displayTip}"</p>
-          </div>
-        </section>
-      )}
-
       {/* EXIF */}
       {!isService && (
         <section className="space-y-6">
@@ -56,7 +36,22 @@ export function PostTipsExif({ post }: PostTipsExifProps) {
             </Button>
           </div>
           {showExif && (
-            <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-4">
+              {post.photos && post.photos.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-2 px-1 scrollbar-hide">
+                  {post.photos.map((photo, idx) => (
+                    <img 
+                      key={photo.id || idx}
+                      src={photo.imageUrl}
+                      alt={`Photo ${idx+1}`}
+                      onClick={() => setActivePhotoIndex(idx)}
+                      className={`h-12 w-12 object-cover rounded-md cursor-pointer border-2 transition-all shrink-0 ${
+                        activePhotoIndex === idx ? "border-primary scale-110 shadow-sm" : "border-transparent opacity-70 hover:opacity-100"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
               <ExifPanel exif={activePhoto} />
             </div>
           )}

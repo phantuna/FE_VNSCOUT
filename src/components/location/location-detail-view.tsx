@@ -60,7 +60,6 @@ export function LocationDetailView({ id }: LocationDetailViewProps) {
         }
 
         try {
-          // Optimization: Fetch exactly the posts for this location using the new Backend API
           const postsRes = await apiFetch(user ? `/api/v1/posts/location/${id}?size=50&viewerId=${user.id}` : `/api/v1/posts/location/${id}?size=50`)
           allPosts = postsRes?.content || postsRes || []
         } catch (e: any) {
@@ -68,8 +67,7 @@ export function LocationDetailView({ id }: LocationDetailViewProps) {
         }
         setLocation(locData)
 
-        // The posts are already filtered by the database and sorted by createdDate DESC
-        // So we can just set them directly
+
         setPosts(Array.isArray(allPosts) ? allPosts : [])
       } catch (error) {
         console.error("Failed to fetch location data:", error)

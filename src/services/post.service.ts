@@ -33,6 +33,15 @@ export async function toggleLike(
   })
 }
 
+export async function toggleSave(
+  postId: string,
+  userId: string
+): Promise<boolean> {
+  return apiFetch(`/api/v1/saved/${postId}?userId=${userId}`, {
+    method: "POST",
+  })
+}
+
 
 export async function getCommentsByPost(
   postId: string,
