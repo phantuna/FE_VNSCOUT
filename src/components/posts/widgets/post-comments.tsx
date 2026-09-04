@@ -117,24 +117,29 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
   }
 
   return (
-    <section className="rounded-[2.5rem] border border-slate-100 bg-white p-6 sm:p-8 shadow-sm">
-      <h3 className="text-xl font-black text-slate-900 mb-8">Bình luận ({comments.length})</h3>
-
-      <div className="space-y-6 mb-8">
+    <div className="flex flex-col h-full">
+      {/* Scrollable comment list */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+        {comments.length === 0 && (
+          <p className="text-center py-12 text-slate-400 text-sm italic">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+        )}
         {comments.map((comment, idx) => (
-          <div key={idx} className="space-y-4">
-            <div className="flex gap-4 p-4 rounded-3xl bg-slate-50 border border-slate-100">
-              <Avatar className="h-10 w-10 shrink-0">
+          <div key={idx} className="space-y-3">
+            {/* Root comment */}
+            <div className="flex gap-3">
+              <Avatar className="h-8 w-8 shrink-0 mt-0.5">
                 <AvatarImage src={comment.author.avatarUrl || "/default-avatar.svg"} />
                 <AvatarFallback>{comment.author.username?.charAt(0)}</AvatarFallback>
               </Avatar>
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-900 text-sm">{comment.author.username}</span>
-                  <span className="text-[10px] text-slate-400" title={comment.createdDate}>{timeAgo(comment.createdDate)}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="font-semibold text-slate-900 text-sm">{comment.author.username}</span>
+                  {editingCommentId !== comment.id && (
+                    <span className="text-sm text-slate-700 leading-snug break-words">{comment.content}</span>
+                  )}
                 </div>
-                {editingCommentId === comment.id ? (
-                  <div className="pt-2 pb-2">
+                {editingCommentId === comment.id && (
+                  <div className="mt-1.5">
                     <Input
                       value={editCommentText}
                       onChange={e => setEditCommentText(e.target.value)}
@@ -143,22 +148,21 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                         if (e.key === "Escape") setEditingCommentId(null)
                       }}
                       autoFocus
-                      className="text-sm bg-white border-slate-200"
+                      className="text-sm bg-slate-50 border-slate-200 h-8"
                     />
-                    <div className="flex gap-2 mt-2">
-                      <Button size="sm" onClick={() => handleEditSubmit(comment.id)} className="h-7 text-xs bg-primary text-white">Lưu</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingCommentId(null)} className="h-7 text-xs">Hủy</Button>
+                    <div className="flex gap-2 mt-1.5">
+                      <Button size="sm" onClick={() => handleEditSubmit(comment.id)} className="h-6 text-[11px] bg-primary text-white px-3">Lưu</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingCommentId(null)} className="h-6 text-[11px] px-3">Hủy</Button>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-slate-600 leading-relaxed">{comment.content}</p>
                 )}
-                <div className="pt-2 flex items-center gap-4">
-                  <button onClick={() => setReplyingTo(comment)} className="text-xs font-bold text-primary hover:underline">Trả lời</button>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-[11px] text-slate-400">{timeAgo(comment.createdDate)}</span>
+                  <button onClick={() => setReplyingTo(comment)} className="text-[11px] font-semibold text-slate-500 hover:text-slate-800">Trả lời</button>
                   {user && user.id === comment.author.id && (
-                    <button 
-                      onClick={() => { setEditingCommentId(comment.id); setEditCommentText(comment.content); }} 
-                      className="text-xs font-bold text-slate-500 hover:text-slate-700 hover:underline"
+                    <button
+                      onClick={() => { setEditingCommentId(comment.id); setEditCommentText(comment.content); }}
+                      className="text-[11px] font-semibold text-slate-400 hover:text-slate-700"
                     >
                       Sửa
                     </button>
@@ -166,14 +170,12 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                   {user && (user.id === comment.author.id || user.roles?.includes("ADMIN") || user.roles?.includes("ROLE_ADMIN")) && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <button className="text-xs font-bold text-rose-500 hover:underline">Xóa</button>
+                        <button className="text-[11px] font-semibold text-rose-400 hover:text-rose-600">Xóa</button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Xóa bình luận</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác.
-                          </AlertDialogDescription>
+                          <AlertDialogDescription>Bạn có chắc chắn muốn xóa bình luận này không?</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Hủy</AlertDialogCancel>
@@ -184,7 +186,6 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                                 setComments(prev => prev.filter(c => c.id !== comment.id));
                                 showSuccessToast("Đã xóa", "Bình luận của bạn đã được xóa.");
                               } catch (err) {
-                                console.error("Lỗi xóa bình luận", err);
                                 showErrorToast("Lỗi", "Không thể xóa bình luận lúc này.");
                               }
                             }}
@@ -200,21 +201,24 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
               </div>
             </div>
 
+            {/* Replies */}
             {comment.replies && comment.replies.length > 0 && (
-              <div className="pl-12 space-y-4">
+              <div className="ml-11 space-y-3 pl-3 border-l-2 border-slate-100">
                 {comment.replies.map((reply, rIdx) => (
-                  <div key={rIdx} className="flex gap-4 p-3 rounded-3xl bg-slate-50/50 border border-slate-50">
-                    <Avatar className="h-8 w-8 shrink-0">
+                  <div key={rIdx} className="flex gap-2.5">
+                    <Avatar className="h-7 w-7 shrink-0 mt-0.5">
                       <AvatarImage src={reply.author.avatarUrl || "/default-avatar.svg"} />
                       <AvatarFallback>{reply.author.username?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-sm">{reply.author.username}</span>
-                        <span className="text-[10px] text-slate-400" title={reply.createdDate}>{timeAgo(reply.createdDate)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="font-semibold text-slate-900 text-sm">{reply.author.username}</span>
+                        {editingCommentId !== reply.id && (
+                          <span className="text-sm text-slate-700 leading-snug break-words">{reply.content}</span>
+                        )}
                       </div>
-                      {editingCommentId === reply.id ? (
-                        <div className="pt-2 pb-2">
+                      {editingCommentId === reply.id && (
+                        <div className="mt-1.5">
                           <Input
                             value={editCommentText}
                             onChange={e => setEditCommentText(e.target.value)}
@@ -223,22 +227,21 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                               if (e.key === "Escape") setEditingCommentId(null)
                             }}
                             autoFocus
-                            className="text-sm bg-white border-slate-200"
+                            className="text-sm bg-slate-50 border-slate-200 h-8"
                           />
-                          <div className="flex gap-2 mt-2">
-                            <Button size="sm" onClick={() => handleEditSubmit(reply.id)} className="h-7 text-xs bg-primary text-white">Lưu</Button>
-                            <Button size="sm" variant="ghost" onClick={() => setEditingCommentId(null)} className="h-7 text-xs">Hủy</Button>
+                          <div className="flex gap-2 mt-1.5">
+                            <Button size="sm" onClick={() => handleEditSubmit(reply.id)} className="h-6 text-[11px] bg-primary text-white px-3">Lưu</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingCommentId(null)} className="h-6 text-[11px] px-3">Hủy</Button>
                           </div>
                         </div>
-                      ) : (
-                        <p className="text-sm text-slate-600 leading-relaxed">{reply.content}</p>
                       )}
-                      <div className="pt-1 flex items-center gap-4">
-                        <button onClick={() => setReplyingTo(comment)} className="text-xs font-bold text-primary hover:underline">Trả lời</button>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-[11px] text-slate-400">{timeAgo(reply.createdDate)}</span>
+                        <button onClick={() => setReplyingTo(comment)} className="text-[11px] font-semibold text-slate-500 hover:text-slate-800">Trả lời</button>
                         {user && user.id === reply.author.id && (
-                          <button 
-                            onClick={() => { setEditingCommentId(reply.id); setEditCommentText(reply.content); }} 
-                            className="text-xs font-bold text-slate-500 hover:text-slate-700 hover:underline"
+                          <button
+                            onClick={() => { setEditingCommentId(reply.id); setEditCommentText(reply.content); }}
+                            className="text-[11px] font-semibold text-slate-400 hover:text-slate-700"
                           >
                             Sửa
                           </button>
@@ -246,14 +249,12 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                         {user && (user.id === reply.author.id || user.roles?.includes("ADMIN") || user.roles?.includes("ROLE_ADMIN")) && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <button className="text-xs font-bold text-rose-500 hover:underline">Xóa</button>
+                              <button className="text-[11px] font-semibold text-rose-400 hover:text-rose-600">Xóa</button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Xóa bình luận</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác.
-                                </AlertDialogDescription>
+                                <AlertDialogDescription>Bạn có chắc chắn muốn xóa bình luận này không?</AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Hủy</AlertDialogCancel>
@@ -268,7 +269,6 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
                                       ));
                                       showSuccessToast("Đã xóa", "Bình luận của bạn đã được xóa.");
                                     } catch (err) {
-                                      console.error("Lỗi xóa bình luận", err);
                                       showErrorToast("Lỗi", "Không thể xóa bình luận lúc này.");
                                     }
                                   }}
@@ -288,46 +288,47 @@ export function PostComments({ postId, comments, setComments, showLoginToast }: 
             )}
           </div>
         ))}
-        {comments.length === 0 && (
-          <p className="text-center py-10 text-slate-400 text-sm italic">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+      </div>
+
+      {/* Sticky input at bottom */}
+      <div className="border-t border-slate-100 px-4 py-3 bg-white">
+        {replyingTo && (
+          <div className="mb-2 flex items-center justify-between text-xs text-slate-500 px-3 py-1.5 bg-slate-50 rounded-full">
+            <span>Đang trả lời <strong>{replyingTo.author.username}</strong></span>
+            <button onClick={() => setReplyingTo(null)} className="font-bold hover:text-rose-500 ml-2">&times;</button>
+          </div>
         )}
-      </div>
-
-      {replyingTo && (
-        <div className="mb-2 flex items-center justify-between text-xs text-slate-500 px-4 py-2 bg-slate-50 rounded-full border border-slate-100">
-          <span>Đang trả lời <strong>{replyingTo.author.username}</strong></span>
-          <button onClick={() => setReplyingTo(null)} className="font-bold hover:text-rose-500 transition-colors">&times; Hủy</button>
+        <div className="flex items-center gap-2.5">
+          <Avatar className="h-8 w-8 shrink-0">
+            <AvatarImage src={user?.avatarUrl || "/default-avatar.svg"} />
+            <AvatarFallback>Me</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-4 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+            <Input
+              ref={commentInputRef}
+              placeholder={replyingTo ? `Trả lời ${replyingTo.author.username}...` : "Thêm bình luận ..."}
+              value={commentText}
+              onChange={e => {
+                if (!user) { showLoginToast(); return }
+                setCommentText(e.target.value)
+              }}
+              onFocus={e => {
+                if (!user) { e.target.blur(); showLoginToast() }
+              }}
+              onKeyDown={e => e.key === "Enter" && handleSubmit()}
+              className="flex-1 border-none bg-transparent text-sm focus-visible:ring-0 h-9 px-0"
+            />
+            <Button
+              size="icon"
+              onClick={handleSubmit}
+              className={cn("h-7 w-7 rounded-full transition-all shrink-0", commentText.trim() ? "bg-primary" : "bg-slate-300")}
+              disabled={!commentText.trim()}
+            >
+              <Send className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
-      )}
-
-      <div className="flex items-center gap-3 p-2 rounded-full border border-slate-200 bg-slate-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-        <Avatar className="h-8 w-8 ml-2">
-          <AvatarImage src={user?.avatarUrl || "/default-avatar.svg"} />
-          <AvatarFallback>Me</AvatarFallback>
-        </Avatar>
-        <Input
-          ref={commentInputRef}
-          placeholder={replyingTo ? `Trả lời ${replyingTo.author.username}...` : "Thêm bình luận của bạn..."}
-          value={commentText}
-          onChange={e => {
-            if (!user) { showLoginToast(); return }
-            setCommentText(e.target.value)
-          }}
-          onFocus={e => {
-            if (!user) { e.target.blur(); showLoginToast() }
-          }}
-          onKeyDown={e => e.key === "Enter" && handleSubmit()}
-          className="flex-1 border-none bg-transparent text-sm focus-visible:ring-0"
-        />
-        <Button
-          size="icon"
-          onClick={handleSubmit}
-          className={cn("h-10 w-10 rounded-full transition-all shadow-md", commentText.trim() ? "bg-primary scale-100" : "bg-slate-300 scale-95")}
-          disabled={!commentText.trim()}
-        >
-          <Send className="h-4 w-4" />
-        </Button>
       </div>
-    </section>
+    </div>
   )
 }

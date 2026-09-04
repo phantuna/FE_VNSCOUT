@@ -2,20 +2,21 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Bookmark, Heart, Share2, Flag, Loader2, AlertCircle } from "lucide-react"
+import {
+  ChevronLeft, Bookmark, Heart, Share2, Flag, Loader2,
+  MessageCircle, MoreHorizontal, Pencil, Trash2, MapPin, Lightbulb
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { type Post, type Comment } from "@/types"
 import { useAuth } from "@/context/AuthContext"
 import { apiFetch } from "@/services/api.service"
 import { showLoginRequiredToast, showSuccessToast, showErrorToast } from "@/lib/toast-utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { PostGallery } from "./widgets/post-gallery"
-import { PostInfoHeader } from "./widgets/post-quick-info"
+import { PostImageGallery } from "./widgets/post-image-gallery"
 import { PostComments } from "./widgets/post-comments"
-import { PostRating } from "./widgets/post-rating"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,21 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { DeletePostDialog } from "./modals/delete-post-dialog"
 import { EditPostDialog } from "./modals/edit-post-dialog"
+import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { parseUTCDate } from "@/utils/date"
+
+function timeAgo(dateStr?: string): string {
+  if (!dateStr) return ""
+  const date = parseUTCDate(dateStr)
+  if (isNaN(date.getTime())) return dateStr
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (diff < 120) return "vừa xong"
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`
+  if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`
+  return `${Math.floor(diff / 604800)} tuần trước`
+}
 
 export function PostDetailView({
   post: initialPost,
@@ -169,7 +185,6 @@ export function PostDetailView({
       await apiFetch(`/api/v1/posts/delete/${post.id}`, { method: "DELETE" })
       showSuccessToast("Đã xoá", "Bài viết của bạn đã được xoá thành công.")
       setIsDeleteDialogOpen(false)
-      // Go back to feed or profile
       router.back()
     } catch (error) {
       showErrorToast("Lỗi", "Xoá bài viết thất bại.")
@@ -217,31 +232,30 @@ export function PostDetailView({
     )
   }
 
+  const displayLocation = post.location?.name || "Địa điểm chưa xác định"
+  const locName = post.location?.nameWithType?.trim() ?? ""
+  const locProv = post.location?.province?.trim() ?? ""
+  const displayAddress = post.location?.address || [locName, locProv].filter(Boolean).join(", ") || ""
+
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+    <div className="min-h-screen bg-white">
+      {/* ─── Topbar ─── */}
+      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur-md">
+        <div className="flex items-center justify-between px-4 py-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.back()}
-            className="flex items-center gap-2 font-bold text-slate-600 hover:text-primary hover:bg-primary/10 transition-colors"
+            className="flex items-center gap-1.5 font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100"
           >
             <ChevronLeft className="h-4 w-4" />
-            Quay lại
+            Bài viết
           </Button>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="hidden sm:flex border-primary/20 text-primary bg-primary/5">
-              Discovery
-            </Badge>
-            <h2 className="text-sm font-black text-slate-900">Chi tiết bài viết</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full text-slate-600 hover:text-primary hover:bg-primary/10 transition-colors" 
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100"
               onClick={handleShare}
             >
               <Share2 className="h-4 w-4" />
@@ -251,7 +265,7 @@ export function PostDetailView({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full text-slate-600 hover:bg-slate-100 hover:text-slate-900 outline-none"
+                  className="rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 outline-none"
                 >
                   <MoreHorizontal className="h-5 w-5" />
                 </Button>
@@ -278,43 +292,142 @@ export function PostDetailView({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl pb-20 pt-6">
-        <div className="px-4 lg:px-8">
-          <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
-            {/* Left Column */}
-            <div className="space-y-8 lg:col-span-8">
-              <PostGallery
-                post={post}
-                liked={liked}
-                saved={saved}
-                isLiking={isLiking}
-                isSavingPost={isSavingPost}
-                onToggleLike={toggleLike}
-                onToggleSave={toggleSave}
-              />
-              <PostComments
-                postId={post.id}
-                comments={comments}
-                setComments={setComments}
-                showLoginToast={showLoginToast}
-              />
-            </div>
+      {/* ─── Main 2-column layout ─── */}
+      <div className="flex h-[calc(100vh-57px)]">
 
-            {/* Right Column */}
-            <div className="space-y-6 lg:col-span-4">
-              <div className="sticky top-24 space-y-6">
-                <PostInfoHeader post={post} />
-                <PostRating
-                  post={post}
-                  setPost={setPost}
-                  showLoginToast={showLoginToast}
-                />
-              </div>
+        {/* LEFT: Sticky image gallery */}
+        <div className="hidden md:flex md:w-[55%] lg:w-[60%] xl:w-[62%] items-center justify-center bg-slate-950 sticky top-[57px] h-[calc(100vh-57px)] overflow-hidden">
+          <PostImageGallery post={post} />
+        </div>
+
+        {/* RIGHT: Scrollable info + comments panel */}
+        <div className="w-full md:w-[45%] lg:w-[40%] xl:w-[38%] flex flex-col overflow-y-auto border-l border-slate-100">
+
+          {/* Mobile gallery */}
+          <div className="md:hidden bg-slate-950">
+            <PostImageGallery post={post} />
+          </div>
+
+          {/* ── Author row ── */}
+          <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-slate-100">
+            <Link href={`/profile/${post.author.id}`}>
+              <Avatar className="h-10 w-10 ring-2 ring-primary/10 ring-offset-1 shrink-0">
+                <AvatarImage src={post.author.avatarUrl || "/default-avatar.svg"} />
+                <AvatarFallback>{post.author.username?.charAt(0)}</AvatarFallback>
+              </Avatar>
+            </Link>
+            <div className="flex-1 min-w-0">
+              <Link href={`/profile/${post.author.id}`} className="hover:underline">
+                <p className="font-bold text-slate-900 text-sm truncate">{post.author.username}</p>
+              </Link>
+              {displayAddress && (
+                <p className="text-xs text-slate-400 flex items-center gap-1 truncate">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  {displayAddress}
+                </p>
+              )}
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-700 shrink-0 outline-none">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                {isOwner ? (
+                  <>
+                    <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="cursor-pointer">
+                      <Pencil className="mr-2 h-4 w-4" /> Sửa bài viết
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} className="cursor-pointer text-destructive focus:text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" /> Xoá bài viết
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem onClick={handleReportClick} className="cursor-pointer text-rose-500 focus:text-rose-500">
+                    <Flag className="mr-2 h-4 w-4" /> Báo cáo
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* ── Caption + Tags + Tip ── */}
+          <div className="px-5 py-4 space-y-3 border-b border-slate-100">
+            {post.caption && (
+              <p className="text-sm text-slate-800 leading-relaxed">{post.caption}</p>
+            )}
+            {(post.tags || []).length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {(post.tags || []).map((tag, idx) => (
+                  <span key={`${tag}-${idx}`} className="text-xs font-semibold text-primary bg-primary/8 hover:bg-primary/15 px-2.5 py-1 rounded-full cursor-pointer transition-colors">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {post.shootingTip && (
+              <div className="flex gap-2.5 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+                <Lightbulb className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-orange-600 mb-0.5">Photo Tip</p>
+                  <p className="text-xs text-orange-700 leading-relaxed">{post.shootingTip}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Like / Comment / Share / Save counts ── */}
+          <div className="px-5 py-3 flex items-center justify-between border-b border-slate-100">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleLike}
+                disabled={isLiking}
+                className={cn(
+                  "flex items-center gap-1.5 text-sm font-semibold transition-all active:scale-95",
+                  liked ? "text-rose-500" : "text-slate-500 hover:text-rose-400"
+                )}
+              >
+                <Heart className={cn("h-5 w-5 transition-all", liked && "fill-current scale-110")} />
+                <span>{likesCount}</span>
+              </button>
+              <button className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-primary transition-colors">
+                <MessageCircle className="h-5 w-5" />
+                <span>{comments.length}</span>
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-primary transition-colors"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+            </div>
+            <button
+              onClick={toggleSave}
+              disabled={isSavingPost}
+              className={cn(
+                "transition-all active:scale-95",
+                saved ? "text-primary" : "text-slate-400 hover:text-primary"
+              )}
+            >
+              <Bookmark className={cn("h-5 w-5", saved && "fill-current")} />
+            </button>
+          </div>
+
+          {/* ── Comments (flex-1 to fill height) ── */}
+          <div className="flex-1">
+            <PostComments
+              postId={post.id}
+              comments={comments}
+              setComments={setComments}
+              showLoginToast={showLoginToast}
+            />
           </div>
         </div>
-      </main>
+      </div>
 
+      {/* ─── Report modal ─── */}
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>

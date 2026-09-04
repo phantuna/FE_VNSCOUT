@@ -1,6 +1,9 @@
 import { toast } from "@/components/ui/use-toast"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8081"
+// Dev: dùng relative URL → Next.js proxy route /api/* → http://localhost:8081/api/*
+// Prod: gọi thẳng backend (qua nginx)
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ""
+
 
 let isRefreshing = false
 let refreshSubscribers: ((token: string) => void)[] = []
