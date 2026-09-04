@@ -4,13 +4,14 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { MapPin, Heart, MessageCircle, Bookmark, Share2 } from "lucide-react"
+import { MapPin, Heart, MessageCircle, Bookmark, Share2, Images } from "lucide-react"
 import { type Post } from "@/types"
 import { formatRelativeTime } from "@/utils/date"
 import { useAuth } from "@/context/AuthContext"
 import { toggleLike, toggleSave } from "@/services/post.service"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 
 interface PostCardProps {
   post: Post
@@ -78,10 +79,31 @@ export function PostCard({ post: initialPost }: PostCardProps) {
         </Link>
       </div>
 
-      {/* Image */}
-      <Link href={`/post/${post.id}`} className="block relative w-full aspect-[4/5] sm:aspect-square bg-muted">
-        <Image src={firstImage} alt="Post image" fill className="object-cover" />
-      </Link>
+      {/* Image / Carousel */}
+      {post.photos && post.photos.length > 1 ? (
+        <Carousel className="w-full relative group">
+          <CarouselContent>
+            {post.photos.map((photo, index) => (
+              <CarouselItem key={photo.id || index}>
+                <Link href={`/post/${post.id}`} className="block relative w-full aspect-[4/5] sm:aspect-square bg-muted">
+                  <Image src={photo.imageUrl} alt={`Post image ${index + 1}`} fill className="object-cover" />
+                  <div className="absolute top-3 right-3 bg-black/60 text-white px-2.5 py-1 rounded-full backdrop-blur-md text-xs font-semibold z-10 shadow-sm">
+                    {index + 1} / {post.photos.length}
+                  </div>
+                </Link>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-black border-none h-8 w-8 shadow-md" />
+            <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-black border-none h-8 w-8 shadow-md" />
+          </div>
+        </Carousel>
+      ) : (
+        <Link href={`/post/${post.id}`} className="block relative w-full aspect-[4/5] sm:aspect-square bg-muted">
+          <Image src={firstImage} alt="Post image" fill className="object-cover" />
+        </Link>
+      )}
 
       {/* Actions */}
       <div className="p-4 pb-2 flex items-center justify-between">
