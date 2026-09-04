@@ -54,6 +54,9 @@ export function PostDetailView({
   const [isSavingPost, setIsSavingPost] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [isSubmittingReport, setIsSubmittingReport] = useState(false)
+  
+  // Lifted state for syncing image gallery and EXIF data
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0)
 
   // Dialog states for Edit / Delete
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -104,7 +107,7 @@ export function PostDetailView({
         console.error("Failed to fetch comments", err)
       }
     }
-    
+
     fetchComments()
 
     const interval = setInterval(fetchComments, 10000)
@@ -247,7 +250,11 @@ export function PostDetailView({
 
         {/* LEFT: Sticky image gallery */}
         <div className="hidden md:flex md:w-[55%] lg:w-[60%] xl:w-[62%] items-center justify-center bg-slate-950 sticky top-[57px] h-[calc(100vh-57px)] overflow-hidden">
-          <PostImageGallery post={post} />
+          <PostImageGallery 
+            post={post} 
+            activeIndex={activePhotoIndex} 
+            onIndexChange={setActivePhotoIndex} 
+          />
         </div>
 
         {/* RIGHT: Scrollable info + comments panel */}
@@ -255,7 +262,11 @@ export function PostDetailView({
 
           {/* Mobile gallery */}
           <div className="md:hidden bg-slate-950">
-            <PostImageGallery post={post} />
+            <PostImageGallery 
+              post={post} 
+              activeIndex={activePhotoIndex} 
+              onIndexChange={setActivePhotoIndex} 
+            />
           </div>
 
           {/* ── Author row ── */}
@@ -274,7 +285,7 @@ export function PostDetailView({
             caption={post.caption}
             tags={post.tags}
             shootingTip={post.shootingTip}
-            photo={post.photos?.[0]}
+            photo={post.photos?.[activePhotoIndex]}
           />
 
           {/* ── Like / Comment / Share / Save counts ── */}

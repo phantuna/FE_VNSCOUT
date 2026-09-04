@@ -22,7 +22,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
   const { user } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
-  
+
   const [isLiking, setIsLiking] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -111,7 +111,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
         <div className="flex items-center gap-4">
           <button onClick={handleLike} className={`flex items-center gap-1.5 hover:scale-110 transition-transform ${post.liked ? "text-red-500" : "text-foreground"}`}>
             <Heart className={`h-6 w-6 ${post.liked ? "fill-current" : ""}`} />
-            {post.likeCount > 0 && <span className="text-sm font-semibold tabular-nums">{post.likeCount}</span>}
+            {(post.likeCount ?? 0) > 0 && <span className="text-sm font-semibold tabular-nums">{post.likeCount}</span>}
           </button>
           <Link href={`/post/${post.id}#comments`} className="flex items-center gap-1.5 hover:scale-110 transition-transform text-foreground">
             <MessageCircle className="h-6 w-6" />
@@ -126,9 +126,8 @@ export function PostCard({ post: initialPost }: PostCardProps) {
             <button
               onClick={() => setShowTip(v => !v)}
               title="Xem mẹo chụp ảnh"
-              className={`hover:scale-110 transition-all ${
-                showTip ? "text-orange-500" : "text-muted-foreground hover:text-orange-400"
-              }`}
+              className={`hover:scale-110 transition-all ${showTip ? "text-orange-500" : "text-muted-foreground hover:text-orange-400"
+                }`}
             >
               <Lightbulb className={`h-5 w-5 ${showTip ? "fill-orange-100" : ""}`} />
             </button>
@@ -154,20 +153,20 @@ export function PostCard({ post: initialPost }: PostCardProps) {
             <span className="inline">{post.caption}</span>
           </div>
           {isLongCaption && (
-            <button 
-              onClick={() => setIsExpanded(!isExpanded)} 
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
               className="text-muted-foreground text-xs mt-1 hover:underline"
             >
               {isExpanded ? "Ẩn bớt" : "Xem thêm"}
             </button>
           )}
         </div>
-        
+
         {post.tags && post.tags.length > 0 && (
           <p className="text-sm text-primary mt-1 flex flex-wrap gap-1">
             {post.tags.map(tag => (
-              <span 
-                key={tag} 
+              <span
+                key={tag}
                 onClick={() => router.push(`/?q=${encodeURIComponent(tag)}`)}
                 className="cursor-pointer hover:underline"
               >

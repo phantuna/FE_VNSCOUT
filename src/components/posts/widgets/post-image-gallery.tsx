@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -8,11 +8,21 @@ import { type Post } from "@/types"
 
 interface PostImageGalleryProps {
   post: Post
+  activeIndex?: number
+  onIndexChange?: (index: number) => void
 }
 
-export function PostImageGallery({ post }: PostImageGalleryProps) {
-  const [activeIndex, setActiveIndex] = useState(0)
+export function PostImageGallery({ post, activeIndex: externalActiveIndex, onIndexChange }: PostImageGalleryProps) {
+  const [internalActiveIndex, setInternalActiveIndex] = useState(0)
+  const activeIndex = externalActiveIndex !== undefined ? externalActiveIndex : internalActiveIndex
+  const setActiveIndex = (index: number) => {
+    setInternalActiveIndex(index)
+    onIndexChange?.(index)
+  }
+
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
+  
+  const mobileScrollContainerRef = useRef<HTMLDivElement>(null)
 
   const imageUrls = post.photos?.map(p => p.imageUrl) || []
   const displayCaption = post.caption || ""
@@ -45,6 +55,28 @@ export function PostImageGallery({ post }: PostImageGalleryProps) {
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [previewIndex, activeIndex])
+
+  // Mobile scroll observer
+  useEffect(() => {
+    const container = mobileScrollContainerRef.current
+    if (!container) return
+
+    let timeoutId: NodeJS.Timeout
+    const handleScroll = () => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        const scrollLeft = container.scrollLeft
+        const width = container.clientWidth
+        const newIndex = Math.round(scrollLeft / width)
+        if (newIndex !== activeIndex && newIndex >= 0 && newIndex < imageUrls.length) {
+          setActiveIndex(newIndex)
+        }
+      }, 150) // Debounce scroll event
+    }
+
+    container.addEventListener("scroll", handleScroll, { passive: true })
+    return () => container.removeEventListener("scroll", handleScroll)
+  }, [imageUrls.length, activeIndex, setActiveIndex])
 
   return (
     <>
@@ -82,9 +114,8 @@ export function PostImageGallery({ post }: PostImageGalleryProps) {
                     <button
                       key={i}
                       onClick={() => setActiveIndex(i)}
-                      className={`h-11 w-11 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
-                        activeIndex === i ? "border-white scale-110" : "border-white/30 opacity-60 hover:opacity-100"
-                      }`}
+                      className={`h-11 w-11 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${activeIndex === i ? "border-white scale-110" : "border-white/30 opacity-60 hover:opacity-100"
+                        }`}
                     >
                       <img src={url} alt={`thumb-${i}`} className="h-full w-full object-cover" />
                     </button>
@@ -96,9 +127,8 @@ export function PostImageGallery({ post }: PostImageGalleryProps) {
                   {imageUrls.map((_, i) => (
                     <span
                       key={i}
-                      className={`h-1.5 rounded-full transition-all ${
-                        activeIndex === i ? "w-4 bg-white" : "w-1.5 bg-white/40"
-                      }`}
+                      className={`h-1.5 rounded-full transition-all ${activeIndex === i ? "w-4 bg-white" : "w-1.5 bg-white/40"
+                        }`}
                     />
                   ))}
                 </div>
@@ -109,7 +139,10 @@ export function PostImageGallery({ post }: PostImageGalleryProps) {
       </div>
 
       {/* ─── Mobile: swipe carousel ─── */}
-      <div className="flex md:hidden snap-x snap-mandatory overflow-x-auto aspect-[4/3]">
+      <div 
+        ref={mobileScrollContainerRef}
+        className="flex md:hidden snap-x snap-mandatory overflow-x-auto aspect-[4/3]"
+      >
         {imageUrls.map((url, i) => (
           <div
             key={i}
@@ -179,9 +212,8 @@ export function PostImageGallery({ post }: PostImageGalleryProps) {
                   <button
                     key={i}
                     onClick={() => setPreviewIndex(i)}
-                    className={`h-12 w-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
-                      previewIndex === i ? "border-white scale-110" : "border-white/30 opacity-60 hover:opacity-100"
-                    }`}
+                    className={`h-12 w-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${previewIndex === i ? "border-white scale-110" : "border-white/30 opacity-60 hover:opacity-100"
+                      }`}
                   >
                     <img src={url} alt={`thumb-${i}`} className="h-full w-full object-cover" />
                   </button>
