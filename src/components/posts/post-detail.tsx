@@ -2,23 +2,20 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import {
-  ChevronLeft, Bookmark, Heart, Loader2,
-  MessageCircle, Share2, MapPin, Lightbulb, Flag
-} from "lucide-react"
+import { ChevronLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { type Post, type Comment } from "@/types"
 import { useAuth } from "@/context/AuthContext"
 import { apiFetch } from "@/services/api.service"
 import { showLoginRequiredToast, showSuccessToast, showErrorToast } from "@/lib/toast-utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
 import { PostImageGallery } from "./widgets/post-image-gallery"
 import { PostComments } from "./widgets/post-comments"
-import { PostActionMenu } from "./widgets/post-action-menu"
+import { PostAuthorHeader } from "./widgets/post-author-header"
+import { PostContentInfo } from "./widgets/post-content-info"
+import { PostInteractionBar } from "./widgets/post-interaction-bar"
 import { DeletePostDialog } from "./modals/delete-post-dialog"
 import { EditPostDialog } from "./modals/edit-post-dialog"
+import { ReportPostDialog } from "./modals/report-post-dialog"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { parseUTCDate } from "@/utils/date"
@@ -56,7 +53,6 @@ export function PostDetailView({
   const [isLiking, setIsLiking] = useState(false)
   const [isSavingPost, setIsSavingPost] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
-  const [reportReason, setReportReason] = useState("")
   const [isSubmittingReport, setIsSubmittingReport] = useState(false)
 
   // Dialog states for Edit / Delete
@@ -146,14 +142,13 @@ export function PostDetailView({
     setIsReportModalOpen(true)
   }
 
-  const submitReport = async () => {
-    if (!reportReason?.trim() || !post) return
+  const submitReport = async (reason: string) => {
+    if (!reason?.trim() || !post) return
     setIsSubmittingReport(true)
     try {
-      await apiFetch(`/api/posts/${post.id}/report`, { method: "POST", body: JSON.stringify({ reason: reportReason }) })
+      await apiFetch(`/api/posts/${post.id}/report`, { method: "POST", body: JSON.stringify({ reason }) })
       showSuccessToast("Đã báo cáo", "Quản trị viên sẽ xem xét báo cáo của bạn.")
       setIsReportModalOpen(false)
-      setReportReason("")
     } catch {
       showErrorToast("Lỗi", "Gửi báo cáo thất bại. Vui lòng thử lại sau.")
     } finally {
@@ -264,94 +259,36 @@ export function PostDetailView({
           </div>
 
           {/* ── Author row ── */}
-          <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-slate-100">
-            <Link href={`/profile/${post.author.id}`}>
-              <Avatar className="h-10 w-10 ring-2 ring-primary/10 ring-offset-1 shrink-0">
-                <AvatarImage src={post.author.avatarUrl || "/default-avatar.svg"} />
-                <AvatarFallback>{post.author.username?.charAt(0)}</AvatarFallback>
-              </Avatar>
-            </Link>
-            <div className="flex-1 min-w-0">
-              <Link href={`/profile/${post.author.id}`} className="hover:underline">
-                <p className="font-bold text-slate-900 text-sm truncate">{post.author.username}</p>
-              </Link>
-              {displayAddress && (
-                <p className="text-xs text-slate-400 flex items-center gap-1 truncate">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  {displayAddress}
-                </p>
-              )}
-            </div>
-            <PostActionMenu
-              isOwner={isOwner}
-              onShare={handleShare}
-              onEdit={() => setIsEditDialogOpen(true)}
-              onDelete={() => setIsDeleteDialogOpen(true)}
-              onReport={handleReportClick}
-            />
-          </div>
+          <PostAuthorHeader
+            author={post.author}
+            location={post.location}
+            isOwner={isOwner}
+            onShare={handleShare}
+            onEdit={() => setIsEditDialogOpen(true)}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+            onReport={handleReportClick}
+          />
 
-          {/* ── Caption + Tags + Tip ── */}
-          <div className="px-5 py-4 space-y-3 border-b border-slate-100">
-            {post.caption && (
-              <p className="text-sm text-slate-800 leading-relaxed">{post.caption}</p>
-            )}
-            {(post.tags || []).length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {(post.tags || []).map((tag, idx) => (
-                  <span key={`${tag}-${idx}`} className="text-xs font-semibold text-primary bg-primary/8 hover:bg-primary/15 px-2.5 py-1 rounded-full cursor-pointer transition-colors">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            {post.shootingTip && (
-              <div className="flex gap-2.5 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
-                <Lightbulb className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-orange-600 mb-0.5">Photo Tip</p>
-                  <p className="text-xs text-orange-700 leading-relaxed">{post.shootingTip}</p>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* ── Caption + Tags + Tip + EXIF ── */}
+          <PostContentInfo
+            caption={post.caption}
+            tags={post.tags}
+            shootingTip={post.shootingTip}
+            photo={post.photos?.[0]}
+          />
 
           {/* ── Like / Comment / Share / Save counts ── */}
-          <div className="px-5 py-3 flex items-center justify-between border-b border-slate-100">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={toggleLike}
-                disabled={isLiking}
-                className={cn(
-                  "flex items-center gap-1.5 text-sm font-semibold transition-all active:scale-95",
-                  liked ? "text-rose-500" : "text-slate-500 hover:text-rose-400"
-                )}
-              >
-                <Heart className={cn("h-5 w-5 transition-all", liked && "fill-current scale-110")} />
-                <span>{likesCount}</span>
-              </button>
-              <button className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-primary transition-colors">
-                <MessageCircle className="h-5 w-5" />
-                <span>{comments.length}</span>
-              </button>
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-primary transition-colors"
-              >
-                <Share2 className="h-5 w-5" />
-              </button>
-            </div>
-            <button
-              onClick={toggleSave}
-              disabled={isSavingPost}
-              className={cn(
-                "transition-all active:scale-95",
-                saved ? "text-primary" : "text-slate-400 hover:text-primary"
-              )}
-            >
-              <Bookmark className={cn("h-5 w-5", saved && "fill-current")} />
-            </button>
-          </div>
+          <PostInteractionBar
+            likesCount={likesCount}
+            commentsCount={comments.length}
+            liked={liked}
+            saved={saved}
+            isLiking={isLiking}
+            isSavingPost={isSavingPost}
+            onToggleLike={toggleLike}
+            onToggleSave={toggleSave}
+            onShare={handleShare}
+          />
 
           {/* ── Comments (flex-1 to fill height) ── */}
           <div className="flex-1">
@@ -366,39 +303,12 @@ export function PostDetailView({
       </div>
 
       {/* ─── Report modal ─── */}
-      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-black text-slate-900 flex items-center gap-2">
-              <Flag className="h-5 w-5 text-rose-500" />
-              Báo cáo bài viết
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-slate-500 mb-3">
-              Vui lòng cho chúng tôi biết lý do bạn báo cáo bài viết này (Ví dụ: Spam, nội dung nhạy cảm, vi phạm bản quyền...)
-            </p>
-            <Textarea
-              placeholder="Nhập lý do báo cáo..."
-              value={reportReason}
-              onChange={(e) => setReportReason(e.target.value)}
-              className="min-h-[120px] resize-none focus-visible:ring-rose-500"
-            />
-          </div>
-          <DialogFooter className="sm:justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>Hủy</Button>
-            <Button
-              variant="default"
-              className="bg-rose-600 hover:bg-rose-700 text-white"
-              onClick={submitReport}
-              disabled={isSubmittingReport || !reportReason.trim()}
-            >
-              {isSubmittingReport && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Gửi báo cáo
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReportPostDialog
+        isOpen={isReportModalOpen}
+        onOpenChange={setIsReportModalOpen}
+        onSubmit={submitReport}
+        isSubmitting={isSubmittingReport}
+      />
 
       <DeletePostDialog
         isOpen={isDeleteDialogOpen}

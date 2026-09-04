@@ -273,10 +273,22 @@ export function PostsFeedView() {
   const displayPosts = isSearchMode ? searchResults : posts
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen bg-background relative"
+      style={{
+        backgroundImage: "url('/vnscout/bg-pattern.png')", // Đường dẫn tới file ảnh hoa văn trống đồng (Hình 3)
+        backgroundRepeat: "repeat",
+        backgroundSize: "600px",
+        backgroundPosition: "center top",
+        backgroundAttachment: "fixed"
+      }}
+    >
+      {/* Lớp phủ mờ để ảnh background không làm chìm nội dung (tuỳ chỉnh opacity) */}
+      <div className="absolute inset-0 bg-white/80 pointer-events-none z-0"></div>
+
       {/* Header */}
       <div className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur-md pt-4 md:pt-6 pb-4">
-        <div className="max-w-xl mx-auto px-4">
+        <div className="max-w-xl mx-auto px-4 relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold text-foreground">
@@ -326,7 +338,7 @@ export function PostsFeedView() {
       </div>
 
       {/* Body */}
-      <div className="max-w-xl mx-auto py-6 sm:px-4">
+      <div className="max-w-xl mx-auto py-6 sm:px-4 relative z-10">
         {locationStateIsPendingOrLoading(stage, loading, isSearching) ? (
           <div className="flex h-72 items-center justify-center">
             <div className="flex flex-col items-center gap-3">
