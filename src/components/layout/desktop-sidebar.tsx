@@ -73,7 +73,8 @@ export function DesktopSidebar({ isCollapsed: controlledIsCollapsed = false, onT
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const eventSource = new EventSource(`http://localhost:8081/api/v1/notifications/stream?token=${token}`);
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+    const eventSource = new EventSource(`${baseUrl}/api/v1/notifications/stream?token=${token}`);
 
     eventSource.addEventListener("notification", (event: any) => {
       try {
