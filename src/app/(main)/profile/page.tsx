@@ -25,17 +25,17 @@ export default function MyProfilePage() {
       if (!user?.id) return
       try {
         setFetchingPosts(true)
-        const allPosts = await apiFetch("/api/v1/posts/getAll")
-        const postsArray = (allPosts as any)?.content || allPosts || []
-        setPosts(postsArray.filter((p: any) => p.author?.id === user.id))
+        const postsRes = await apiFetch(`/api/v1/posts/user/${user.id}?viewerId=${user.id}&page=0&size=50`)
+        const postsArray = (postsRes as any)?.content || postsRes || []
+        setPosts(Array.isArray(postsArray) ? postsArray : [])
       } catch (error) {
         console.error("Failed to fetch user posts:", error)
       } finally {
         setFetchingPosts(false)
       }
     }
-    if (user) fetchUserPosts()
-  }, [user])
+    if (user?.id) fetchUserPosts()
+  }, [user?.id])
 
   if (isLoading || !user || fetchingPosts) {
     return (

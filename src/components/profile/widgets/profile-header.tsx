@@ -2,13 +2,15 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Award, Camera, MapPin, UserCheck, UserPlus, Loader2, Zap, Settings, ArrowLeft } from "lucide-react"
+import { Award, Camera, MapPin, UserCheck, UserPlus, Loader2, Zap, Settings, ArrowLeft, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { User, Post } from "@/types"
 import { chatService } from "@/services/chat.service"
+import { shareContent } from "@/utils/share"
+import { safeNavigateBack } from "@/utils/navigation"
 
 interface ProfileHeaderProps {
   user: User
@@ -41,6 +43,15 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const router = useRouter()
 
+  const handleShareProfile = () => {
+    shareContent({
+      title: `Hồ sơ của ${user.username} | Vietnam Photo Scout`,
+      text: user.bio || `Khám phá các tác phẩm ảnh của ${user.username} trên Vietnam Photo Scout!`,
+      path: `/profile/${user.id}`,
+      customSuccessMsg: "Đã sao chép liên kết hồ sơ vào khay nhớ tạm!",
+    })
+  }
+
   return (
     <>
       {/* Header */}
@@ -49,7 +60,7 @@ export function ProfileHeader({
           {showBackButton && (
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => safeNavigateBack(router, "/")}
               className="rounded-full p-1.5 text-foreground hover:bg-muted"
               aria-label="Go back"
             >
@@ -107,7 +118,7 @@ export function ProfileHeader({
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-5 flex gap-3">
+            <div className="mt-5 flex flex-wrap gap-3">
               {isOwnProfile ? (
                 <>
                   <Link href="/settings">
@@ -115,43 +126,63 @@ export function ProfileHeader({
                       Chỉnh sửa hồ sơ
                     </Button>
                   </Link>
-                  <Button variant="outline" className="bg-transparent text-sm" size="sm">
+                  <Button
+                    variant="outline"
+                    className="bg-transparent text-sm gap-1.5"
+                    size="sm"
+                    onClick={handleShareProfile}
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
                     Chia sẻ hồ sơ
                   </Button>
                 </>
-              ) : canFollow ? (
+              ) : (
                 <>
-                  <Button
-                    className={cn(
-                      "flex items-center gap-2 text-sm transition-all",
-                      following
-                        ? "bg-secondary text-secondary-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90"
-                    )}
-                    size="sm"
-                    onClick={toggleFollow}
-                    disabled={isLoadingFollow}
-                  >
-                    {isLoadingFollow ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : following ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
-                    {following ? "Đang theo dõi" : "Theo dõi"}
-                  </Button>
+                  {canFollow && (
+                    <Button
+                      className={cn(
+                        "flex items-center gap-2 text-sm transition-all",
+                        following
+                          ? "bg-secondary text-secondary-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90"
+                      )}
+                      size="sm"
+                      onClick={toggleFollow}
+                      disabled={isLoadingFollow}
+                    >
+                      {isLoadingFollow ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : following ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
+                      {following ? "Đang theo dõi" : "Theo dõi"}
+                    </Button>
+                  )}
+                  {canFollow && (
+                    <Button
+                      variant="outline"
+                      className="bg-transparent text-sm"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await chatService.getOrCreateConversation(user.id)
+                          router.push('/messages')
+                        } catch (e) {
+                          console.error('Lỗi khi tạo cuộc trò chuyện:', e)
+                        }
+                      }}
+                    >
+                      Nhắn tin
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
-                    className="bg-transparent text-sm"
+                    className="bg-transparent text-sm gap-1.5"
                     size="sm"
-                    onClick={async () => {
-                      try {
-                        await chatService.getOrCreateConversation(user.id)
-                        router.push('/messages')
-                      } catch (e) {
-                        console.error('Lỗi khi tạo cuộc trò chuyện:', e)
-                      }
-                    }}
+                    onClick={handleShareProfile}
+                    title="Chia sẻ hồ sơ"
                   >
-                    Nhắn tin
+                    <Share2 className="h-3.5 w-3.5" />
+                    Chia sẻ
                   </Button>
                 </>
-              ) : null}
+              )}
             </div>
           </div>
         </div>

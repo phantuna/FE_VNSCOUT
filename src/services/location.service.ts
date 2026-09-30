@@ -10,6 +10,19 @@ export interface LocationCreateRequest {
   locationType?: "SPOT" | "SERVICE"
 }
 
+/** Cluster tỉnh/huyện để vẽ bubble trên map khi zoom xa */
+export interface LocationCluster {
+  id: string
+  name: string
+  latitude: number
+  longitude: number
+  spotCount: number
+  serviceCount: number
+  totalPostCount: number
+  level: number
+  code: string
+}
+
 export async function getAllLocations(): Promise<Location[]> {
   const res = await apiFetch("/api/locations?size=10000")
   return res.content || res
@@ -26,6 +39,10 @@ export async function createLocation(
     method: "POST",
     body: JSON.stringify(body),
   })
+}
+
+export async function getLocationClusters(zoom: number): Promise<LocationCluster[]> {
+  return apiFetch(`/api/locations/clusters?zoom=${zoom}`)
 }
 
 export async function searchVietMap(

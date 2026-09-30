@@ -106,7 +106,7 @@ export function MapSearchBar({
         )}
       </div>
 
-      {/* Bộ Lọc */}
+      {/* Bộ Lọc Khu Vực & Danh Mục 1 Chạm */}
       <div className="px-4 pb-3 flex flex-col gap-2 border-b border-border">
         <div className="flex items-center justify-between gap-2 bg-muted/40 border border-border rounded-xl px-3 py-1.5">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Khu vực:</span>
@@ -127,11 +127,37 @@ export function MapSearchBar({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 hide-scrollbar">
-          <div className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase transition-all duration-200 bg-primary text-primary-foreground shadow-md flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5" />
-            ĐỊA ĐIỂM GẦN BẠN NHẤT
-          </div>
+
+        {/* Thanh Category Pills 1-Chạm */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar scroll-smooth">
+          <button
+            type="button"
+            onClick={() => setSelectedCategory("")}
+            className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold uppercase transition-all cursor-pointer ${
+              !selectedCategory || selectedCategory === "ALL"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-border/40"
+            }`}
+          >
+            Tất cả
+          </button>
+          {categoriesList.filter(c => c && c !== "ALL").map((cat) => {
+            const isActive = selectedCategory === cat
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(isActive ? "" : cat)}
+                className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-border/40"
+                }`}
+              >
+                {cat}
+              </button>
+            )
+          })}
         </div>
       </div>
     </>

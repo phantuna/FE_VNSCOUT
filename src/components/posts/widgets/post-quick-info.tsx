@@ -8,20 +8,20 @@ import Link from "next/link"
 import { type Post } from "@/types"
 import { showSuccessToast, showErrorToast } from "@/lib/toast-utils"
 import { calculateSolarTimes } from "@/lib/solar-calculator"
+import { shareContent } from "@/utils/share"
 
 interface PostInfoHeaderProps {
   post: Post
 }
 
 export function PostInfoHeader({ post }: PostInfoHeaderProps) {
-  const handleShare = async () => {
-    try {
-      const url = `${window.location.origin}/post/${post.id}`
-      await navigator.clipboard.writeText(url)
-      showSuccessToast("Đã sao chép", "Liên kết bài viết đã được lưu vào khay nhớ tạm.")
-    } catch (error) {
-      showErrorToast("Lỗi", "Không thể chia sẻ liên kết.")
-    }
+  const handleShare = () => {
+    shareContent({
+      title: post.location?.name ? `Địa điểm: ${post.location.name}` : "Địa điểm chụp ảnh",
+      text: post.caption || "Khám phá góc ảnh đẹp tại địa điểm này!",
+      path: `/post/${post.id}`,
+      customSuccessMsg: "Đã sao chép liên kết địa điểm vào khay nhớ tạm!",
+    })
   }
 
   const solarTimes = useMemo(() => {

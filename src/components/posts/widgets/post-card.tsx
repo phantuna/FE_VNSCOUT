@@ -16,7 +16,9 @@ import {
   Pencil,
   Trash2,
   Flag,
-  Loader2
+  Loader2,
+  Users,
+  Lock
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -26,6 +28,7 @@ import { useAuth } from "@/context/AuthContext"
 import { apiFetch } from "@/services/api.service"
 import { useToast } from "@/hooks/use-toast"
 import { showLoginRequiredToast, showSuccessToast, showErrorToast } from "@/lib/toast-utils"
+import { shareContent } from "@/utils/share"
 import { useRouter } from "next/navigation"
 import type { Post } from "@/types"
 import { parseUTCDate } from "@/utils/date"
@@ -85,6 +88,7 @@ export function PostCard({ post: initialPost }: PostCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editCaption, setEditCaption] = useState(caption)
   const [editTip, setEditTip] = useState(displayTip)
+  const [editVisibility, setEditVisibility] = useState<"PUBLIC" | "FOLLOWERS_ONLY" | "PRIVATE">(post.visibility || "PUBLIC")
   const [isEditing, setIsEditing] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [reportReason, setReportReason] = useState("")
@@ -140,14 +144,13 @@ export function PostCard({ post: initialPost }: PostCardProps) {
     }
   }
 
-  const handleShare = async () => {
-    try {
-      const url = `${window.location.origin}/post/${post.id}`
-      await navigator.clipboard.writeText(url)
-      showSuccessToast("Đã sao chép", "Liên kết bài viết đã được lưu vào khay nhớ tạm.")
-    } catch (error) {
-      showErrorToast("Lỗi", "Không thể chia sẻ liên kết.")
-    }
+  const handleShare = () => {
+    shareContent({
+      title: post.author?.username ? `Bài viết của ${post.author.username} trên Vietnam Photo Scout` : "Bài viết trên Vietnam Photo Scout",
+      text: post.caption || "Khám phá góc ảnh đẹp tại Việt Nam!",
+      path: `/post/${post.id}`,
+      customSuccessMsg: "Đã sao chép liên kết bài viết vào khay nhớ tạm!",
+    })
   }
 
   const handleDelete = async () => {
@@ -172,7 +175,8 @@ export function PostCard({ post: initialPost }: PostCardProps) {
         body: JSON.stringify({
           caption: editCaption,
           shootingTip: editTip,
-          tags: post.tags || []
+          tags: post.tags || [],
+          visibility: editVisibility,
         })
       })
       setPost(res)
@@ -229,6 +233,16 @@ export function PostCard({ post: initialPost }: PostCardProps) {
             {post.author.levelTitle && (
               <span className="text-[10px] text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded-sm">
                 {post.author.levelTitle}
+              </span>
+            )}
+            {post.visibility === "PRIVATE" && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-white dark:bg-card px-2 py-0.5 text-[10px] font-medium text-foreground" title="Chỉ mình tôi">
+                <Lock className="h-3 w-3 text-primary" /> Riêng tư
+              </span>
+            )}
+            {post.visibility === "FOLLOWERS_ONLY" && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-white dark:bg-card px-2 py-0.5 text-[10px] font-medium text-foreground" title="Bạn bè (mutual follow)">
+                <Users className="h-3 w-3 text-primary" /> Bạn bè
               </span>
             )}
           </Link>
@@ -404,6 +418,8 @@ export function PostCard({ post: initialPost }: PostCardProps) {
         setCaption={setEditCaption}
         tip={editTip}
         setTip={setEditTip}
+        visibility={editVisibility}
+        setVisibility={setEditVisibility}
       />
 
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>

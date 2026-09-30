@@ -67,6 +67,8 @@ export interface Post {
   photos: Photo[]
   isSaved?: boolean
   status?: "ACTIVE" | "PENDING_REVIEW" | "HIDDEN"
+  pendingReason?: string
+  visibility?: "PUBLIC" | "FOLLOWERS_ONLY" | "PRIVATE"
   averageRating?: number
   totalRatings?: number
 }

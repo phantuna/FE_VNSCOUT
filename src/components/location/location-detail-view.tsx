@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, MapPin, Sun, Clock, Loader2, AlertCircle, Building2, Camera, Tag } from "lucide-react"
+import { ChevronLeft, MapPin, Sun, Clock, Loader2, AlertCircle, Building2, Camera, Tag, Navigation, Share2, Sparkles } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { showLoginRequiredToast } from "@/lib/toast-utils"
 import { useRouter } from "next/navigation"
+import { safeNavigateBack } from "@/utils/navigation"
 import { calculateSolarTimes } from "@/lib/solar-calculator"
 import {
   Dialog,
@@ -109,7 +110,7 @@ export function LocationDetailView({ id }: LocationDetailViewProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.back()}
+            onClick={() => safeNavigateBack(router, "/")}
             className="flex items-center gap-2 font-bold text-slate-600 hover:text-primary hover:bg-primary/10 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -151,7 +152,54 @@ export function LocationDetailView({ id }: LocationDetailViewProps) {
       </div>
 
       {/* Main Content */}
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mx-auto max-w-3xl px-4 py-6">
+        {/* 1-Tap Action Bar: Thao tác nhanh không cần tìm kiếm */}
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              const dest = (location.latitude && location.longitude)
+                ? `${location.latitude},${location.longitude}`
+                : encodeURIComponent(location.address || location.name || "");
+              window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, "_blank");
+            }}
+            className="rounded-xl h-9 px-3.5 font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm gap-1.5 cursor-pointer text-xs"
+          >
+            <Navigation className="h-3.5 w-3.5" /> Chỉ đường
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/map?location=${location.id}`)}
+            className="rounded-xl h-9 px-3.5 font-bold border-border bg-card hover:bg-muted text-foreground gap-1.5 cursor-pointer text-xs"
+          >
+            <MapPin className="h-3.5 w-3.5 text-primary" /> Xem trên Bản đồ
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/create?locationId=${location.id}`)}
+            className="rounded-xl h-9 px-3.5 font-bold border-primary/40 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all gap-1.5 cursor-pointer text-xs"
+          >
+            <Camera className="h-3.5 w-3.5" /> Đăng ảnh tại đây
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href)
+              toast({ title: "Đã sao chép liên kết", description: `Liên kết của "${location.name}" đã được lưu vào khay nhớ tạm.` })
+            }}
+            className="rounded-xl h-9 px-3 font-semibold border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground gap-1.5 cursor-pointer text-xs sm:ml-auto"
+            title="Chia sẻ địa điểm"
+          >
+            <Share2 className="h-3.5 w-3.5" /> Chia sẻ
+          </Button>
+        </div>
+
         {/* Location Stats */}
         <div className={`mb-8 grid gap-4 sm:grid-cols-2 ${(!location.locationType || location.locationType === "SPOT") ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
           <div className="rounded-lg border border-border bg-card p-4">

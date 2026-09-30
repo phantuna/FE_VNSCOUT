@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { type Location } from "@/types"
+import { type LocationCluster } from "@/services/location.service"
 import "./map.css"
 
 // Chặn lỗi AbortError ảo từ nội bộ Vietmap GL một cách triệt để ở cấp độ global
@@ -30,6 +31,8 @@ interface VietMapProps {
   showSpots?: boolean
   showServices?: boolean
   locationPosts?: any[]
+  /** Callback khi click vào cluster bubble — để map page có thể scroll filter theo tỉnh */
+  onSelectCluster?: (cluster: LocationCluster) => void
 }
 
 export function VietMapView({
@@ -44,6 +47,7 @@ export function VietMapView({
   showSpots = true,
   showServices = false,
   locationPosts = [],
+  onSelectCluster,
 }: VietMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
@@ -53,8 +57,19 @@ export function VietMapView({
   // Lưu trữ các marker đang hiển thị để dọn dẹp tránh trùng lặp
   const markersRef = useRef<any[]>([])
   const photoMarkersRef = useRef<any[]>([])
+  // Cluster bubble markers (province/district)
+  const clusterMarkersRef = useRef<any[]>([])
   // Lưu trữ marker tìm kiếm tạm thời
   const searchMarkerRef = useRef<any>(null)
+
+  // Dùng ref cho zoom hiện tại (không cần re-render React, chỉ logic JS)
+  const currentZoomRef = useRef<number>(5.8)
+  // Throttle timer để tránh spam API cluster mỗi pixel zoom
+  const clusterThrottleRef = useRef<NodeJS.Timeout | null>(null)
+  // Zone hiện tại để chỉ re-fetch khi zone thay đổi (tránh fetch lặp khi zoom cùng zone)
+  const clusterZoneRef = useRef<string | null>(null)
+  // Ngưỡng zoom để xác định chế độ hiển thị
+  const CLUSTER_MODE_ZOOM = 11
 
   // 1. Khởi tạo bản đồ VietMap
   useEffect(() => {
@@ -116,7 +131,7 @@ export function VietMapView({
           }
         })
 
-        // Lắng nghe sự kiện zoom để tự động thay đổi lớp hiển thị
+        // Lắng nghe sự kiện zoom để tự động thay đổi lớp hiển thị và trigger cluster fetch
         map.on("zoom", () => {
           if (!mapContainer.current) return
           const zoom = map.getZoom()
@@ -127,6 +142,18 @@ export function VietMapView({
             mapContainer.current.classList.add("vps-zoom-simple")
             mapContainer.current.classList.remove("vps-zoom-detailed")
           }
+          // Cập nhật zoom ref (không trigger re-render React)
+          currentZoomRef.current = zoom
+          // Throttle 600ms: chỉ gọi cluster fetch sau khi user dừng zoom
+          if (clusterThrottleRef.current) clearTimeout(clusterThrottleRef.current)
+          clusterThrottleRef.current = setTimeout(() => {
+            // Xác định zone: "province" | "district" | "detail"
+            const zone = zoom < 8 ? "province" : zoom < 11 ? "district" : "detail"
+            if (zone !== clusterZoneRef.current) {
+              clusterZoneRef.current = zone
+              fetchAndDrawClusters(zoom)
+            }
+          }, 600)
         })
 
         map.on("error", (e: any) => {
@@ -339,6 +366,108 @@ export function VietMapView({
       markersRef.current.push(marker)
     })
   }, [mapLoaded, locations, onSelectLocation, selectedLocationId])
+
+  // ─── 4.5. Fetch và vẽ CLUSTER BUBBLES khi zoom < CLUSTER_MODE_ZOOM ───────
+  // Fetch clusters từ API khi zoom thay đổi vượt ngưỡng.
+  // Dùng useCallback để tránh re-create hàm không cần thiết.
+  const fetchAndDrawClusters = useCallback(async (zoom: number) => {
+    const vietmapgl = (window as any).vietmapgl
+    if (!vietmapgl || !mapRef.current) return
+    const MarkerClass = vietmapgl.Marker
+    const map = mapRef.current
+
+    // Dọn cluster cũ
+    clusterMarkersRef.current.forEach(m => m.remove())
+    clusterMarkersRef.current = []
+
+    if (zoom >= CLUSTER_MODE_ZOOM) return // Chế độ marker riêng lẻ
+
+    try {
+      const { getLocationClusters } = await import("@/services/location.service")
+      const data = await getLocationClusters(zoom)
+
+      data.forEach(cluster => {
+        if (!cluster.latitude || !cluster.longitude) return
+        const total = (cluster.spotCount || 0) + (cluster.serviceCount || 0)
+        if (total === 0) return
+
+        const isProvince = cluster.level === 0
+        // Kích thước bubble tỉ lệ log với số lượng địa điểm
+        const rawSize = Math.min(80, Math.max(44, 44 + Math.log(total + 1) * 8))
+        const size = Math.round(rawSize)
+        const fontSize = size < 52 ? 11 : size < 64 ? 13 : 15
+
+        const el = document.createElement("div")
+        el.style.cursor = "pointer"
+        el.style.zIndex = "5"
+        el.innerHTML = `
+          <div class="vps-cluster-bubble" style="
+            position: relative;
+            width: ${size}px;
+            height: ${size}px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: ${isProvince
+              ? 'radial-gradient(circle at 35% 35%, rgba(251,191,36,0.95), rgba(245,158,11,0.85))'
+              : 'radial-gradient(circle at 35% 35%, rgba(99,102,241,0.95), rgba(79,70,229,0.85))'
+            };
+            border: 2.5px solid ${isProvince ? 'rgba(253,224,71,0.9)' : 'rgba(165,180,252,0.9)'};
+            box-shadow: 0 4px 16px ${isProvince ? 'rgba(245,158,11,0.45)' : 'rgba(99,102,241,0.45)'}, 0 0 0 6px ${isProvince ? 'rgba(245,158,11,0.12)' : 'rgba(99,102,241,0.12)'};
+            transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
+            color: #fff;
+            user-select: none;
+          ">
+            <span style="font-size:${fontSize}px; font-weight:800; line-height:1; letter-spacing:-0.5px;">${total}</span>
+            <span style="font-size:${Math.max(8, fontSize - 3)}px; font-weight:600; opacity:0.88; margin-top:1px; max-width:${size - 10}px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; padding:0 4px;">${cluster.name}</span>
+          </div>
+        `
+
+        el.addEventListener("mouseenter", () => {
+          const bubble = el.querySelector(".vps-cluster-bubble") as HTMLElement
+          if (bubble) {
+            bubble.style.transform = "scale(1.12)"
+            bubble.style.zIndex = "20"
+          }
+        })
+        el.addEventListener("mouseleave", () => {
+          const bubble = el.querySelector(".vps-cluster-bubble") as HTMLElement
+          if (bubble) {
+            bubble.style.transform = "scale(1)"
+            bubble.style.zIndex = "5"
+          }
+        })
+        el.addEventListener("click", (e) => {
+          e.stopPropagation()
+          // Zoom vào cluster khi click
+          map.flyTo({
+            center: [cluster.longitude, cluster.latitude],
+            zoom: isProvince ? 9 : 12,
+            duration: 1200,
+          })
+          onSelectCluster?.(cluster)
+        })
+
+        const marker = new MarkerClass({ element: el, anchor: "center" })
+          .setLngLat([cluster.longitude, cluster.latitude])
+          .addTo(map)
+
+        clusterMarkersRef.current.push(marker)
+      })
+    } catch (err) {
+      console.error("[Cluster] Failed to fetch clusters:", err)
+    }
+  }, [onSelectCluster])
+
+  // Fetch cluster ban đầu khi map load xong (zoom mặc định 5.8 → province zone)
+  useEffect(() => {
+    if (!mapLoaded) return
+    clusterZoneRef.current = "province"
+    fetchAndDrawClusters(currentZoomRef.current)
+  }, [mapLoaded, fetchAndDrawClusters])
+
 
   // 5. Thêm Marker tìm kiếm tạm thời khi có kết quả tìm kiếm (searchResult)
   useEffect(() => {

@@ -270,7 +270,9 @@ export function PostsFeedView() {
   }, [searchHasMore, isSearching, fetchingMore, searchQuery])
 
   const isSearchMode = searchQuery.trim().length >= 2
-  const displayPosts = isSearchMode ? searchResults : posts
+  const rawPosts = isSearchMode ? searchResults : posts
+  // Trang chủ / Feed công cộng tuyệt đối không hiển thị bài viết riêng tư
+  const displayPosts = rawPosts.filter(p => p.visibility !== "PRIVATE")
 
   return (
     <div 

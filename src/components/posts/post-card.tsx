@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { MapPin, Heart, MessageCircle, Bookmark, Share2, Lightbulb } from "lucide-react"
+import { MapPin, Heart, MessageCircle, Bookmark, Share2, Lightbulb, Users, Lock, Clock } from "lucide-react"
 import { type Post } from "@/types"
 import { formatRelativeTime } from "@/utils/date"
 import { useAuth } from "@/context/AuthContext"
@@ -12,6 +12,7 @@ import { toggleLike, toggleSave } from "@/services/post.service"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
+import { shareContent } from "@/utils/share"
 
 interface PostCardProps {
   post: Post
@@ -56,6 +57,15 @@ export function PostCard({ post: initialPost }: PostCardProps) {
     }
   }
 
+  const handleShare = () => {
+    shareContent({
+      title: post.author?.username ? `Bài viết của ${post.author.username} trên Vietnam Photo Scout` : "Bài viết trên Vietnam Photo Scout",
+      text: post.caption || "Khám phá góc ảnh đẹp tại Việt Nam!",
+      path: `/post/${post.id}`,
+      customSuccessMsg: "Đã sao chép liên kết bài viết vào khay nhớ tạm!",
+    })
+  }
+
   const firstImage = post.photos?.[0]?.imageUrl || "/placeholder.jpg"
   const isLongCaption = post.caption && (post.caption.length > 150 || post.caption.split('\n').length > 3)
 
@@ -78,6 +88,27 @@ export function PostCard({ post: initialPost }: PostCardProps) {
             )}
           </div>
         </Link>
+
+        <div className="flex items-center gap-2">
+          {post.status === "PENDING_REVIEW" && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-white dark:bg-card px-2 py-0.5 text-[11px] font-medium text-primary">
+              <Clock className="h-3 w-3" /> Chờ duyệt
+            </span>
+          )}
+          {post.visibility === "PRIVATE" && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-white dark:bg-card px-2 py-0.5 text-[11px] font-medium text-foreground" title="Chỉ mình tôi">
+              <Lock className="h-3 w-3 text-primary" /> Riêng tư
+            </span>
+          )}
+          {post.visibility === "FOLLOWERS_ONLY" && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-white dark:bg-card px-2 py-0.5 text-[11px] font-medium text-foreground" title="Bạn bè (mutual follow)">
+              <Users className="h-3 w-3 text-primary" /> Bạn bè
+            </span>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {formatRelativeTime(post.createdDate)}
+          </span>
+        </div>
       </div>
 
       {/* Image / Carousel */}
@@ -117,7 +148,13 @@ export function PostCard({ post: initialPost }: PostCardProps) {
             <MessageCircle className="h-6 w-6" />
             {(post.commentCount ?? 0) > 0 && <span className="text-sm font-semibold tabular-nums">{post.commentCount}</span>}
           </Link>
-          <button className="hover:scale-110 transition-transform text-foreground hidden sm:block">
+          <button
+            type="button"
+            onClick={handleShare}
+            aria-label="Chia sẻ bài viết"
+            title="Chia sẻ bài viết"
+            className="hover:scale-110 transition-transform text-foreground flex items-center"
+          >
             <Share2 className="h-6 w-6" />
           </button>
         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { ProfileView } from "@/components/profile/profile-view"
 import { apiFetch } from "@/services/api.service"
 import { type User, type Post } from "@/types"
+import { useAuth } from "@/context/AuthContext"
 import { Loader2 } from "lucide-react"
 import { use } from "react"
 
@@ -13,6 +14,7 @@ export default function UserProfilePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = use(params)
+  const { user: currentUser } = useAuth()
   const [user, setUser] = useState<User | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,9 +40,12 @@ export default function UserProfilePage({
         }
         setUser(mappedUser)
 
-        const allPosts = await apiFetch("/api/v1/posts/getAll")
-        const postsArray = (allPosts as any)?.content || allPosts || []
-        setPosts((postsArray as Post[]).filter((p) => p.author?.id === id))
+        const postsUrl = currentUser?.id
+          ? `/api/v1/posts/user/${id}?viewerId=${currentUser.id}&page=0&size=50`
+          : `/api/v1/posts/user/${id}?page=0&size=50`
+        const postsRes = await apiFetch(postsUrl)
+        const postsArray = (postsRes as any)?.content || postsRes || []
+        setPosts(Array.isArray(postsArray) ? postsArray : [])
       } catch (error) {
         console.error("Failed to fetch profile data:", error)
       } finally {
@@ -48,7 +53,7 @@ export default function UserProfilePage({
       }
     }
     fetchUserData()
-  }, [id])
+  }, [id, currentUser?.id])
 
   if (loading) {
     return (
@@ -66,5 +71,12 @@ export default function UserProfilePage({
     )
   }
 
-  return <ProfileView user={user} posts={posts} showBackButton />
+  return (
+    <ProfileView
+      user={user}
+      posts={posts}
+      isOwnProfile={currentUser?.id === id}
+      showBackButton
+    />
+  )
 }

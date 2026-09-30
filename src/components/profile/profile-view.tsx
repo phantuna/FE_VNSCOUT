@@ -35,7 +35,7 @@ export function ProfileView({
     initialIsFollowing: initialUser.isFollowing,
   })
 
-  const userPosts = posts.filter((p) => p.author.id === initialUser.id)
+  const userPosts = posts.filter((p) => !p.author?.id || p.author.id === initialUser.id || (p as any).userId === initialUser.id)
   const exp = initialUser.reputationScore || 0;
   const currentLevel = (() => {
     if (exp >= 4000) return 6;
@@ -82,6 +82,7 @@ export function ProfileView({
         userPosts={userPosts}
         savedPosts={savedPosts}
         isLoadingSaved={isLoadingSaved}
+        isOwnProfile={isOwnProfile}
       />
     </div>
   )

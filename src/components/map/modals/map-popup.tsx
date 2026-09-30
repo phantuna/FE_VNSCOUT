@@ -8,6 +8,7 @@ import {
   Heart, ChevronRight, ChevronLeft, X, Loader2, Sunrise, Sunset, Hotel, Building2
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { type Location, type Post } from "@/types"
 import { calculateSolarTimes } from "@/lib/solar-calculator"
 
@@ -255,6 +256,41 @@ export function MapLocationPopup({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Thanh Thao Tác Nhanh 1-Chạm (Quick Action Bar) */}
+      <div className="p-3 border-t border-border bg-card/95 backdrop-blur-md shrink-0 flex items-center gap-2">
+        <Button
+          onClick={() => onGetDirections(location)}
+          size="sm"
+          className="flex-1 h-9 rounded-xl gap-1.5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer"
+        >
+          <Navigation className="h-3.5 w-3.5" /> Chỉ đường
+        </Button>
+        <Link
+          href={`/create?locationId=${location.id}`}
+          className="inline-flex items-center justify-center h-9 px-3 rounded-xl gap-1 text-xs font-bold border border-primary/40 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all cursor-pointer"
+        >
+          <Camera className="h-3.5 w-3.5" /> Đăng ảnh
+        </Link>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onShare(location)}
+          className="h-9 w-9 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+          title="Sao chép liên kết"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onViewFeed(location)}
+          className="h-9 w-9 rounded-xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+          title="Xem trang chi tiết"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   )

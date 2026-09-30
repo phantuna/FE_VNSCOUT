@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Upload, ImagePlus, ChevronLeft, ChevronRight, X, Loader2 } from "lucide-react"
+import { Upload, ImagePlus, ChevronLeft, ChevronRight, X, Loader2, MapPinOff, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -44,6 +44,15 @@ export function PhotoUploader({
           {/* Main Preview */}
           <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-muted shadow-lg">
             <Image src={images[selectedIndex].imageUrl} alt="Preview" fill className="object-cover" />
+
+            {/* Warning overlay nếu ảnh đang xem thiếu GPS */}
+            {!images[selectedIndex]?.exifData?.gpsLatitude && (
+              <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 bg-amber-500/90 backdrop-blur-sm px-3 py-2">
+                <MapPinOff className="h-4 w-4 text-white shrink-0" />
+                <span className="text-xs font-semibold text-white leading-tight">Ảnh thiếu GPS — bài sẽ chờ admin duyệt vị trí</span>
+              </div>
+            )}
+
             {images.length > 1 && (
               <>
                 <Button size="icon" variant="ghost" onClick={() => setSelectedIndex((selectedIndex - 1 + images.length) % images.length)} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-black/50">
@@ -74,6 +83,12 @@ export function PhotoUploader({
                   onClick={() => setSelectedIndex(i)}
                 >
                   <Image src={photo.imageUrl} alt={`Thumbnail ${i + 1}`} fill className="object-cover" />
+                  {/* GPS missing badge */}
+                  {!photo?.exifData?.gpsLatitude && (
+                    <div className="absolute top-1 left-1 rounded-full bg-amber-500 p-0.5 shadow" title="Thiếu GPS">
+                      <MapPinOff className="h-2.5 w-2.5 text-white" />
+                    </div>
+                  )}
                   <button
                     onClick={e => { e.stopPropagation(); onRemoveImage(i) }}
                     className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 shadow-sm"
@@ -89,6 +104,19 @@ export function PhotoUploader({
               )}
             </div>
           </div>
+
+          {/* Banner tổng hợp nếu có ảnh thiếu GPS */}
+          {images.some(img => !img?.exifData?.gpsLatitude) && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <div>
+                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">Một số ảnh thiếu dữ liệu GPS</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  Ảnh không có GPS cần được Admin xác minh vị trí trước khi hiển thị công khai. Bài viết sẽ vào hàng chờ duyệt.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div

@@ -113,3 +113,28 @@
     opacity: 0.95;
   }
 }
+
+/* ─── Cluster Bubble Styles ─────────────────────────────── */
+.vps-cluster-bubble {
+  animation: clusterPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  will-change: transform;
+}
+
+@keyframes clusterPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Khi hover cluster bubble: tăng shadow */
+.vps-cluster-bubble:hover {
+  box-shadow:
+    0 8px 24px rgba(245, 158, 11, 0.6),
+    0 0 0 10px rgba(245, 158, 11, 0.1) !important;
+}

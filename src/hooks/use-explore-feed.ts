@@ -13,6 +13,22 @@ export interface TagItem {
   postCount?: number
 }
 
+export interface ExploreCategory {
+  id: string
+  label: string
+  icon?: string
+}
+
+export const EXPLORE_CATEGORIES: ExploreCategory[] = [
+  { id: "ALL", label: "Tất cả" },
+  { id: "HOT", label: "Xu hướng", icon: "🔥" },
+  { id: "NATURE", label: "Thiên nhiên & Núi biển", icon: "🏞️" },
+  { id: "STREET", label: "Phố & Kiến trúc", icon: "🏙️" },
+  { id: "CAFE", label: "Dịch vụ & Cafe", icon: "☕" },
+  { id: "PORTRAIT", label: "Chân dung", icon: "📸" },
+  { id: "SUNSET", label: "Hoàng hôn & Đêm", icon: "🌅" },
+]
+
 export function useExploreFeed() {
   const [activeTab, setActiveTab] = useState<"photos" | "photographers" | "tags">("photos")
   const [searchQuery, setSearchQuery] = useState("")
@@ -286,10 +302,62 @@ export function useExploreFeed() {
       .slice(0, 10)
   }, [tags, posts])
 
-  const filteredPosts = posts.filter(p =>
-    !searchQuery ||
-    p.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL")
+
+  const filteredPosts = useMemo(() => {
+    let result = posts
+
+    // 1. Lọc theo danh mục 1-chạm (Category Pill)
+    if (selectedCategory === "HOT") {
+      result = [...result].sort((a, b) => ((b.likeCount || 0) + (b.commentCount || 0)) - ((a.likeCount || 0) + (a.commentCount || 0)))
+    } else if (selectedCategory === "NATURE") {
+      const keywords = ["biển", "núi", "đèo", "rừng", "hồ", "thác", "thiên nhiên", "nature", "landscape", "sông", "đồi"]
+      result = result.filter(p => {
+        const text = `${p.caption || ""} ${p.location?.name || ""} ${p.location?.category || ""} ${p.tags?.join(" ") || ""}`.toLowerCase()
+        return keywords.some(k => text.includes(k))
+      })
+    } else if (selectedCategory === "STREET") {
+      const keywords = ["phố", "đường", "cổ", "kiến trúc", "street", "city", "nhà ga", "quảng trường"]
+      result = result.filter(p => {
+        const text = `${p.caption || ""} ${p.location?.name || ""} ${p.location?.category || ""} ${p.tags?.join(" ") || ""}`.toLowerCase()
+        return keywords.some(k => text.includes(k))
+      })
+    } else if (selectedCategory === "CAFE") {
+      const keywords = ["cafe", "cà phê", "coffee", "tiệm", "homestay", "resort", "khách sạn", "service", "dịch vụ", "quán"]
+      result = result.filter(p => {
+        const locType = (p.location as any)?.locationType
+        const text = `${p.caption || ""} ${p.location?.name || ""} ${p.location?.category || ""} ${p.tags?.join(" ") || ""}`.toLowerCase()
+        return locType === "SERVICE" || keywords.some(k => text.includes(k))
+      })
+    } else if (selectedCategory === "PORTRAIT") {
+      const keywords = ["chân dung", "portrait", "mẫu", "model", "người", "áo dài"]
+      result = result.filter(p => {
+        const text = `${p.caption || ""} ${p.tags?.join(" ") || ""}`.toLowerCase()
+        return keywords.some(k => text.includes(k))
+      })
+    } else if (selectedCategory === "SUNSET") {
+      const keywords = ["hoàng hôn", "sunset", "bình minh", "sunrise", "đêm", "night", "golden hour", "blue hour"]
+      result = result.filter(p => {
+        const text = `${p.caption || ""} ${p.tags?.join(" ") || ""}`.toLowerCase()
+        return keywords.some(k => text.includes(k))
+      })
+    }
+
+    // 2. Lọc theo từ khoá tìm kiếm (Tag, Địa điểm, Tỉnh thành, Caption, Tác giả)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase().replace(/^#/, "")
+      result = result.filter(p => {
+        const matchTag = p.tags?.some(t => t.toLowerCase().includes(q))
+        const matchLocation = p.location?.name?.toLowerCase().includes(q)
+        const matchProvince = p.location?.province?.toLowerCase().includes(q)
+        const matchCaption = p.caption?.toLowerCase().includes(q)
+        const matchAuthor = p.author?.username?.toLowerCase().includes(q)
+        return matchTag || matchLocation || matchProvince || matchCaption || matchAuthor
+      })
+    }
+
+    return result
+  }, [posts, selectedCategory, searchQuery])
 
   const filteredUsers = users
     .filter(u => u.id !== user?.id)
@@ -300,6 +368,9 @@ export function useExploreFeed() {
     setActiveTab,
     searchQuery,
     setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    categories: EXPLORE_CATEGORIES,
     posts,
     users,
     tags,

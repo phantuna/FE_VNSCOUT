@@ -8,6 +8,8 @@ import { type Post, type Comment } from "@/types"
 import { useAuth } from "@/context/AuthContext"
 import { apiFetch } from "@/services/api.service"
 import { showLoginRequiredToast, showSuccessToast, showErrorToast } from "@/lib/toast-utils"
+import { shareContent } from "@/utils/share"
+import { safeNavigateBack } from "@/utils/navigation"
 import { PostImageGallery } from "./widgets/post-image-gallery"
 import { PostComments } from "./widgets/post-comments"
 import { PostAuthorHeader } from "./widgets/post-author-header"
@@ -62,8 +64,9 @@ export function PostDetailView({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editCaption, setEditCaption] = useState("")
-  const [editTip, setEditTip] = useState("")
+  const [editCaption, setEditCaption] = useState(post?.caption || "")
+  const [editTip, setEditTip] = useState(post?.shootingTip || "")
+  const [editVisibility, setEditVisibility] = useState<"PUBLIC" | "FOLLOWERS_ONLY" | "PRIVATE">(post?.visibility || "PUBLIC")
   const [isEditing, setIsEditing] = useState(false)
 
   const isOwner = user?.id === post?.author?.id
@@ -86,6 +89,7 @@ export function PostDetailView({
         setLikesCount(postData.likeCount)
         setEditCaption(postData.caption || "")
         setEditTip(postData.shootingTip || "")
+        setEditVisibility(postData.visibility || "PUBLIC")
       } catch (error) {
         console.error("Failed to fetch post:", error)
       } finally {
@@ -159,14 +163,13 @@ export function PostDetailView({
     }
   }
 
-  const handleShare = async () => {
-    try {
-      const url = `${window.location.origin}/post/${post?.id || postId}`
-      await navigator.clipboard.writeText(url)
-      showSuccessToast("Đã sao chép", "Liên kết bài viết đã được lưu vào khay nhớ tạm.")
-    } catch (error) {
-      showErrorToast("Lỗi", "Không thể chia sẻ liên kết.")
-    }
+  const handleShare = () => {
+    shareContent({
+      title: post?.author?.username ? `Bài viết của ${post.author.username} trên Vietnam Photo Scout` : "Bài viết trên Vietnam Photo Scout",
+      text: post?.caption || "Khám phá góc ảnh đẹp tại Việt Nam!",
+      path: `/post/${post?.id || postId}`,
+      customSuccessMsg: "Đã sao chép liên kết bài viết vào khay nhớ tạm!",
+    })
   }
 
   const handleDelete = async () => {
@@ -176,7 +179,7 @@ export function PostDetailView({
       await apiFetch(`/api/v1/posts/delete/${post.id}`, { method: "DELETE" })
       showSuccessToast("Đã xoá", "Bài viết của bạn đã được xoá thành công.")
       setIsDeleteDialogOpen(false)
-      router.back()
+      safeNavigateBack(router, "/")
     } catch (error) {
       showErrorToast("Lỗi", "Xoá bài viết thất bại.")
     } finally {
@@ -193,7 +196,8 @@ export function PostDetailView({
         body: JSON.stringify({
           caption: editCaption,
           shootingTip: editTip,
-          tags: post.tags || []
+          tags: post.tags || [],
+          visibility: editVisibility,
         })
       })
       setPost(res)
@@ -218,7 +222,7 @@ export function PostDetailView({
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Không tìm thấy bài viết</p>
-        <Button onClick={() => router.back()}>Quay lại</Button>
+        <Button onClick={() => safeNavigateBack(router, "/")}>Quay lại trang chủ</Button>
       </div>
     )
   }
@@ -236,11 +240,11 @@ export function PostDetailView({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.back()}
+            onClick={() => safeNavigateBack(router, "/")}
             className="flex items-center gap-1.5 font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100"
           >
             <ChevronLeft className="h-4 w-4" />
-            Bài viết
+            Quay lại
           </Button>
         </div>
       </header>
@@ -337,6 +341,8 @@ export function PostDetailView({
         setCaption={setEditCaption}
         tip={editTip}
         setTip={setEditTip}
+        visibility={editVisibility}
+        setVisibility={setEditVisibility}
       />
     </div>
   )
